@@ -11,5 +11,9 @@
 	"maxlen": 100,
 	"indent": 4,
 	"latedef": true,
-	"esnext": true
+	"esnext": true,
+	"globals": {
+		"cxl": false,
+		"workspace": false
+	}
 }
