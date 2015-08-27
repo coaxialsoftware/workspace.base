@@ -9,6 +9,8 @@ var
 
 plugin.extend({
 	
+	sourcePath: __dirname + '/jshint.js',
+	
 	findOptions: function(p, f)
 	{
 		var file = path.dirname(f) + '/.jshintrc', data;
@@ -49,7 +51,7 @@ plugin.extend({
 		payload.$ = data.$;
 		payload.v = data.v;
 		
-		socket.respond(client, 'jshint', payload);
+		workspace.socket.respond(client, 'jshint', payload);
 		
 		if (payload.errors)
 			payload.errors.forEach(function(e) {

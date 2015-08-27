@@ -1,0 +1,15 @@
+
+{
+	"node": true,
+	"unused":true, 
+	"eqeqeq":true, 
+	"newcap":true, 
+	"undef":true, 
+	"smarttabs":true, 
+	"trailing":true,
+	"maxdepth":3,
+	"maxlen": 100,
+	"indent": 4,
+	"latedef": true,
+	"esnext": true
+}
