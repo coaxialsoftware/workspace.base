@@ -7,7 +7,7 @@
 
 var
 	fs = require('fs'),
-	_ = require('lodash'),
+	_ = workspace._,
 
 	common = workspace.common,
 	plugin = module.exports = cxl('workspace.git')
