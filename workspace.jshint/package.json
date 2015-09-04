@@ -1,5 +1,5 @@
 {
-	"name": "workspace.jshint",
+	"name": "@cxl/workspace.jshint",
 	"version": "0.1.0",
 	"dependencies": {
 		"jshint": "*"

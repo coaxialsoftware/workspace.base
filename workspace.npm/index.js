@@ -15,7 +15,8 @@ plugin.config(function() {
 
 	var
 		pkg = workspace.common.load_json_sync(project.path + '/package.json'),
-		config = project.configuration
+		config = project.configuration,
+		links
 	;
 
 		if (pkg)
@@ -24,6 +25,17 @@ plugin.config(function() {
 			config.name = config.name || pkg.name;
 			config.version = config.version || pkg.version;
 			config.description = config.description || pkg.description;
+			
+			links = [];
+			
+			if (pkg.homepage)
+				links.push({ l: pkg.homepage, c: 'home' });
+			if (pkg.repository)
+				links.push({ l: pkg.repository.url, c: 'database' });
+			if (pkg.bugs)
+				links.push({ l: pkg.bugs.url, c: 'bug' });
+					
+			config.links = config.links ? config.links.concat(links) : links;
 		}
 
 	});
