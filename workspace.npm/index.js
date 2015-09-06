@@ -25,15 +25,16 @@ plugin.config(function() {
 			config.name = config.name || pkg.name;
 			config.version = config.version || pkg.version;
 			config.description = config.description || pkg.description;
+			config.license = config.license || pkg.license;
 			
 			links = [];
 			
 			if (pkg.homepage)
-				links.push({ l: pkg.homepage, c: 'home' });
+				links.push({ l: pkg.homepage, c: 'home', t: 'Homepage' });
 			if (pkg.repository)
-				links.push({ l: pkg.repository.url, c: 'database' });
+				links.push({ l: pkg.repository.url, c: 'database', t: 'Repository' });
 			if (pkg.bugs)
-				links.push({ l: pkg.bugs.url, c: 'bug' });
+				links.push({ l: pkg.bugs.url, c: 'bug', t: 'Bug Tracker' });
 					
 			config.links = config.links ? config.links.concat(links) : links;
 		}
