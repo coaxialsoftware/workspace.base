@@ -39,6 +39,7 @@ var plugin = new ide.Plugin({
 		
 		if (errors)
 		{
+			ide.notify(errors.length + ' JSHINT error(s) found.', 'error');
 			errors.forEach(function(e) {
 				editor.hints.add('jshint', {
 					line: e.line,
