@@ -64,12 +64,28 @@ var plugin = new ide.Plugin({
 		}
 	},
 	
+	onAssist: function(done, editor, token)
+	{
+		var hints;
+		
+		if (editor && editor.hints)
+		{
+			hints = editor.hints.getLine('jshint', token.line);
+			
+			if (hints.length)
+				done(hints.map(function(h) {
+					return { hint: h.hint, type: 'error', priority: 5 };
+				}));
+		}
+	},
+	
 	ready: function()
 	{
 		this.files = {};
 		this.listenTo('socket.message.jshint', this.onMessage)
 			.listenTo('editor.write', this.getHints)
 			.listenTo('editor.load', this.getHints)
+			.listenTo('assist', this.onAssist)
 		;
 	}
 	
