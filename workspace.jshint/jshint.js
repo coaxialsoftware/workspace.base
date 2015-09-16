@@ -41,13 +41,14 @@ var plugin = new ide.Plugin({
 		{
 			ide.notify(errors.length + ' JSHINT error(s) found.', 'error');
 			errors.forEach(function(e) {
-				editor.hints.add('jshint', {
-					line: e.line,
-					ch: e.character,
-					type: e.id==='(error)' ? 'error' : 'warning',
-					length: e.evidence && e.evidence.length,
-					hint: e.reason 
-				});
+				if (e)
+					editor.hints.add('jshint', {
+						line: e.line,
+						ch: e.character,
+						type: e.id==='(error)' ? 'error' : 'warning',
+						length: e.evidence && e.evidence.length,
+						hint: e.reason 
+					});
 			});
 		}
 	},
@@ -68,13 +69,13 @@ var plugin = new ide.Plugin({
 	{
 		var hints;
 		
-		if (editor && editor.hints)
+		if (editor && editor.hints && token)
 		{
 			hints = editor.hints.getLine('jshint', token.line);
 			
 			if (hints.length)
 				done(hints.map(function(h) {
-					return { hint: h.hint, type: 'error', priority: 5 };
+					return { tag: 'jshint', hint: h.hint, type: 'error', priority: 5 };
 				}));
 		}
 	},
