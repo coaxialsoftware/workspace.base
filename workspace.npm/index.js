@@ -40,5 +40,10 @@ plugin.config(function() {
 		}
 
 	});
+	
+	workspace.plugins.on('project.load', function(project) {
+		if (project.configuration.tags.npm)
+			project.ignore.push('node_modules');
+	});
 
 });

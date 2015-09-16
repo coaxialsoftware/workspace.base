@@ -27,5 +27,10 @@ plugin.config(function() {
 		}
 
 	});
+	
+	workspace.plugins.on('project.load', function(project) {
+		if (project.configuration.tags.bower)
+			project.ignore.push('bower_components');
+	});
 
 });

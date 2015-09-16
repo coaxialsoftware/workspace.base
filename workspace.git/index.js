@@ -17,8 +17,10 @@ plugin.extend({
 
 	onProjectCreate: function(project)
 	{
+		var c = project.configuration;
+		
 		if (fs.existsSync(project.path+'/.git'))
-			project.configuration.tags.git = true;
+			c.tags.git = true;
 	},
 
 	readIgnore: function(project)
@@ -26,14 +28,20 @@ plugin.extend({
 		return common.read(project.path + '/.gitignore')
 			.then(function(data) {
 				var f = data.trim().replace(/[\/\\]$/mg, '').split("\n");
+				var ignore = project.configuration.ignore || [];
+			
 				project.configuration.ignore =
-					_.compact(project.configuration.ignore.concat(f));
+					_.compact(ignore.concat(f));
 			}, function() { });
 	},
 
 	onProjectLoad: function(project)
 	{
-		project.resolve(this.readIgnore(project));
+		if (project.configuration.tags.git)
+		{
+			project.ignore.push('.git');
+			project.resolve(this.readIgnore(project));
+		}
 	}
 
 }).config(function() {
