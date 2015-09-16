@@ -1,9 +1,13 @@
 
-(function(ide, $, undefined) {
+(function(ide, $, _, undefined) {
 "use strict";
 
 var
-	GREP_REGEX = /^(?:\.\/)?(.+):(\d+):\s*(.+)\s*/
+	GREP_REGEX = /^(?:\.\/)?(.+):(\d+):\s*(.+)\s*/,
+	ITEM_TEMPLATE = _.template('<div class="ide-item">' +
+		'<button class="ide-item-content" data-id="<%= obj.id %>">' +
+		'<strong><%- obj.filename%></strong>:<%= obj.line %>' +
+		'<pre><%- obj.match %></pre></button></div>')
 ;
 
 /**
@@ -39,10 +43,11 @@ var
 	{
 		match = GREP_REGEX.exec(result[i]);
 		if (match && !ignore.test(match[1]))
-			files.push(match);
+			files.push({
+				line: match[2], filename: match[1], match: match[3] });
 	}
 
-	editor.addFiles(files);
+	editor.add(files);
 }
 
 function cmd(name, args, onprogress)
@@ -63,7 +68,7 @@ ide.plugins.register('shell', new ide.Plugin({
 
 	open: function(cmd)
 	{
-		ide.cmd(cmd);
+		ide.commandParser.run(cmd);
 	},
 
 	commands: {
@@ -93,17 +98,16 @@ ide.plugins.register('shell', new ide.Plugin({
 		{
 			if (!term)
 				return;
-			
 		var
 			pos = 0,
 			exclude = ide.project.get('ignore'),
 			args = [],
 			env = ide.project.get('env'),
 
-			editor = new ide.FileList({
+			editor = new ide.Editor.FileList({
 				file: 'grep ' + term,
 				plugin: this,
-				file_template: '#tpl-grep',
+				itemTemplate: ITEM_TEMPLATE,
 				title: 'grep ' + term
 			})
 		;
@@ -140,4 +144,4 @@ ide.plugins.register('shell', new ide.Plugin({
 
 }));
 
-})(this.ide, this.jQuery);
+})(this.ide, this.jQuery, this._);

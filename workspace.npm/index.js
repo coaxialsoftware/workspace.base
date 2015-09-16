@@ -30,11 +30,14 @@ plugin.config(function() {
 			links = [];
 			
 			if (pkg.homepage)
-				links.push({ l: pkg.homepage, c: 'home', t: 'Homepage' });
+				links.push({
+					href: pkg.homepage, class: 'home', title: 'Homepage' });
 			if (pkg.repository)
-				links.push({ l: pkg.repository.url, c: 'database', t: 'Repository' });
+				links.push({
+					href: pkg.repository.url, class: 'database', title: 'Repository' });
 			if (pkg.bugs)
-				links.push({ l: pkg.bugs.url, c: 'bug', t: 'Bug Tracker' });
+				links.push({
+					href: pkg.bugs.url, class: 'bug', title: 'Bug Tracker' });
 					
 			config.links = config.links ? config.links.concat(links) : links;
 		}
