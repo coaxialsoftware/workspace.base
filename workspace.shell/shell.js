@@ -4,8 +4,8 @@
 
 var
 	GREP_REGEX = /^(?:\.\/)?(.+):(\d+):\s*(.+)\s*/,
-	ITEM_TEMPLATE = _.template('<div class="ide-item">' +
-		'<button class="ide-item-content" data-id="<%= obj.id %>">' +
+	ITEM_TEMPLATE = _.template('<div class="item">' +
+		'<button class="item-content" data-id="<%= obj.id %>">' +
 		'<strong><%- obj.filename%></strong>:<%= obj.line %>' +
 		'<pre><%- obj.match %></pre></button></div>')
 ;
