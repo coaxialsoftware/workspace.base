@@ -63,13 +63,65 @@ function cmd(name, args, onprogress)
 		})
 	;
 }
-
-ide.plugins.register('shell', new ide.Plugin({
-
+	
+ide.plugins.register('shell.grep', {
+	
+	commands: {
+		grep: function(param)
+		{
+			return this.open({ plugin: this, params: param });
+		}
+	},
+	
 	open: function(options)
 	{
-		ide.commandParser.run(options.params);
-	},
+		if (!options.params)
+			return;
+	var
+		pos = 0,
+		term = options.params,
+		exclude = ide.project.get('ignore'),
+		args = [],
+		env = ide.project.get('env'),
+
+		editor
+	;
+		options.itemTemplate = ITEM_TEMPLATE;
+		options.title = 'grep ' + term;
+		
+		editor = new ide.Editor.FileList(options);
+
+		args.push('-0rnIP');
+
+		if (exclude instanceof Array)
+			exclude.forEach(function(f) {
+				var d = f.replace(/ /g, '\\ ').replace(/\/$/, '');
+				args.push('--exclude-dir=' + d + '',
+					'--exclude=' + d);
+			});
+
+		// Fix for linux?
+		args.push(term, env && env.WINDIR ? '*' : '.');
+
+		ide.shell('grep', args, function(a)
+		{
+			var eol = a.target.responseText.lastIndexOf("\n") || a.loaded;
+
+			grepDone(editor, a.target.responseText.slice(pos, eol));
+			pos = eol+1;
+		}).then(function(text) {
+			grepDone(editor, text.slice(pos));
+			if (editor.files.length===0)
+				editor.$content.html('<div style="text-align:center">' +
+					'No matches found.</div>');
+		});
+
+		return editor;
+	}
+	
+});
+
+ide.plugins.register('shell', new ide.Plugin({
 
 	commands: {
 
@@ -92,51 +144,6 @@ ide.plugins.register('shell', new ide.Plugin({
 		grunt: function()
 		{
 			cmd('grunt', arguments);
-		},
-
-		grep: function(term)
-		{
-			if (!term)
-				return;
-		var
-			pos = 0,
-			exclude = ide.project.get('ignore'),
-			args = [],
-			env = ide.project.get('env'),
-
-			editor = new ide.Editor.FileList({
-				params: 'grep ' + term,
-				plugin: this,
-				itemTemplate: ITEM_TEMPLATE,
-				title: 'grep ' + term
-			})
-		;
-			args.push('-0rnIP');
-
-			if (exclude instanceof Array)
-				exclude.forEach(function(f) {
-					var d = f.replace(/ /g, '\\ ').replace(/\/$/, '');
-					args.push('--exclude-dir=' + d + '',
-						'--exclude=' + d);
-				});
-
-			// Fix for linux?
-			args.push(term, env && env.WINDIR ? '*' : '.');
-
-			ide.shell('grep', args, function(a)
-			{
-				var eol = a.target.responseText.lastIndexOf("\n") || a.loaded;
-
-				grepDone(editor, a.target.responseText.slice(pos, eol));
-				pos = eol+1;
-			}).then(function(text) {
-				grepDone(editor, text.slice(pos));
-				if (editor.files.length===0)
-					editor.$content.html('<div style="text-align:center">' +
-						'No matches found.</div>');
-			});
-			
-			return editor;
 		}
 
 	}
