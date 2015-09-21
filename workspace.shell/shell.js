@@ -42,7 +42,7 @@ var
 	for (; i<result.length; i++)
 	{
 		match = GREP_REGEX.exec(result[i]);
-		if (match && !ignore.test(match[1]))
+		if (match && (!ignore || !ignore.test(match[1])))
 			files.push({
 				line: match[2], filename: match[1], match: match[3] });
 	}
@@ -66,9 +66,9 @@ function cmd(name, args, onprogress)
 
 ide.plugins.register('shell', new ide.Plugin({
 
-	open: function(cmd)
+	open: function(options)
 	{
-		ide.commandParser.run(cmd);
+		ide.commandParser.run(options.params);
 	},
 
 	commands: {
@@ -105,7 +105,7 @@ ide.plugins.register('shell', new ide.Plugin({
 			env = ide.project.get('env'),
 
 			editor = new ide.Editor.FileList({
-				file: 'grep ' + term,
+				params: 'grep ' + term,
 				plugin: this,
 				itemTemplate: ITEM_TEMPLATE,
 				title: 'grep ' + term
@@ -123,8 +123,6 @@ ide.plugins.register('shell', new ide.Plugin({
 			// Fix for linux?
 			args.push(term, env && env.WINDIR ? '*' : '.');
 
-			ide.workspace.add(editor);
-
 			ide.shell('grep', args, function(a)
 			{
 				var eol = a.target.responseText.lastIndexOf("\n") || a.loaded;
@@ -137,6 +135,8 @@ ide.plugins.register('shell', new ide.Plugin({
 					editor.$content.html('<div style="text-align:center">' +
 						'No matches found.</div>');
 			});
+			
+			return editor;
 		}
 
 	}
