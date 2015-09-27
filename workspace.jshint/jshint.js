@@ -75,7 +75,7 @@ var plugin = new ide.Plugin({
 			
 			if (hints.length)
 				done(hints.map(function(h) {
-					return { tag: 'jshint', hint: h.hint, type: 'error', priority: 5 };
+					return { code: 'jshint', title: h.hint, className: 'error', priority: 5 };
 				}));
 		}
 	},
