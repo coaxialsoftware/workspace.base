@@ -45,9 +45,9 @@ var plugin = new ide.Plugin({
 					editor.hints.add('jshint', {
 						line: e.line,
 						ch: e.character,
-						type: e.id==='(error)' ? 'error' : 'warning',
+						className: e.id==='(error)' ? 'error' : 'warn',
 						length: e.evidence && e.evidence.length,
-						hint: e.reason 
+						title: e.reason 
 					});
 			});
 		}
@@ -75,7 +75,7 @@ var plugin = new ide.Plugin({
 			
 			if (hints.length)
 				done(hints.map(function(h) {
-					return { code: 'jshint', title: h.hint, className: 'error', priority: 5 };
+					return { code: 'jshint', title: h.title, className: h.className, priority: 5 };
 				}));
 		}
 	},

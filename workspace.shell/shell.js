@@ -68,17 +68,17 @@ ide.plugins.register('shell.grep', {
 	commands: {
 		grep: function(param)
 		{
-			return this.open({ plugin: this, params: param });
+			return this.open({ plugin: this, file: param });
 		}
 	},
 	
 	open: function(options)
 	{
-		if (!options.params)
+		if (!options.file)
 			return;
 	var
 		pos = 0,
-		term = options.params,
+		term = options.file,
 		exclude = ide.project.get('ignore'),
 		args = [],
 		env = ide.project.get('env'),
