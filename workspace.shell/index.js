@@ -15,24 +15,12 @@ plugin.extend({
 
 }).route('POST', '/shell', function(req, res) {
 var
-	me = this,
-	query = req.body.q,
-	command, process
+	process
 ;
 	if (!req.body.c)
 		return res.send(this.error('Invalid command.'));
 
-	command = req.body.c + (query ? ' ' + query.join(' ') : '');
-
-	me.log(command);
-
-	process = require('child_process').spawn(
-		req.body.c, req.body.q,
-		{ cwd: req.body.p, detached: true, stdio: [ 'ignore' ] }
-	);
-	process.on('error', function(err) {
-		me.error(err);
-	});
+	process = workspace.shell(req.body.c, req.body.q, req.body.p);
 	process.stdout.on('data', function(data) {
 		if (!res.headersSent)
 			res.writeHead(200);
@@ -43,10 +31,5 @@ var
 			res.writeHead(500);
 		res.write(data);
 	});
-	process.on('close', function(code) {
-		res.end();
-		me.log(command + ' returned with status ' + code);
-	});
-	process.unref();
-
+	process.on('close', res.end.bind(res));
 });
