@@ -84,7 +84,7 @@ var plugin = new ide.Plugin({
 	{
 		this.files = {};
 		this.listenTo('socket.message.jshint', this.onMessage)
-			.listenTo('editor.write', this.getHints)
+			.listenTo('editor.change', this.getHints)
 			.listenTo('editor.load', this.getHints)
 			.listenTo('assist', this.onAssist)
 		;
