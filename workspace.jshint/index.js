@@ -49,7 +49,7 @@ plugin.extend({
 		var payload = jshint.data();
 		
 		payload.$ = data.$;
-		payload.v = data.v;
+		payload.e = data.e;
 		
 		workspace.socket.respond(client, 'jshint', payload);
 		
