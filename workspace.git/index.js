@@ -42,9 +42,16 @@ plugin.extend({
 			project.ignore.push('.git');
 			project.resolve(this.readIgnore(project));
 		}
+	},
+	
+	reloadProject: function(project)
+	{
+		if (project.configuration.tags.git)
+			project.reload();
 	}
 
 }).config(function() {
 	workspace.plugins.on('project.create', this.onProjectCreate.bind(this));
 	workspace.plugins.on('project.load', this.onProjectLoad.bind(this));
+	workspace.plugins.on('project.filechange:.gitignore', this.reloadProject.bind(this));
 });

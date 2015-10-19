@@ -4,6 +4,7 @@ var
 	path = require('path'),
 	fs = require('fs'),
 	
+	common = workspace.common,
 	plugin = module.exports = cxl('workspace.jshint')
 ;
 
@@ -36,28 +37,42 @@ plugin.extend({
 		}
 	},
 	
+	lintFile: function(client, data)
+	{
+	var
+		me = this,
+		options = me.findOptions(data.p, data.f),
+		js
+	;
+		fs.readFile(data.f, 'utf8', function(err, file) {
+			
+			if (err)
+				file = '';
+			
+			js = common.patch(file, data.js);
+			jshint(js, options, options && options.globals);
+			
+			var payload = jshint.data();
+
+			payload.$ = data.$;
+			payload.v = data.v;
+
+			workspace.socket.respond(client, 'jshint', payload);
+
+			if (payload.errors)
+				payload.errors.forEach(function(e) {
+					if (e)
+						me.error(`${e.line}:${e.character} ${e.reason}`);
+				});
+		});
+	},
+	
 	/**
 	 * data: { $:id, p:project, f:path, js:code }
 	 */
 	onMessage: function(client, data)
 	{
-		this.operation(`Linting file ${data.f}`, function() {
-			var options = this.findOptions(data.p, data.f);
-			jshint(data.js, options, options && options.globals);
-		});
-		
-		var payload = jshint.data();
-		
-		payload.$ = data.$;
-		payload.e = data.e;
-		
-		workspace.socket.respond(client, 'jshint', payload);
-		
-		if (payload.errors)
-			payload.errors.forEach(function(e) {
-				if (e)
-					this.error(`${e.line}:${e.character} ${e.reason}`);
-			}, this);
+		this.operation(`Linting file ${data.f}`, this.lintFile.bind(this, client,data));
 	}
 	
 }).run(function() {

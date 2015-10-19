@@ -22,7 +22,8 @@ var plugin = new ide.Plugin({
 	{
 		var file = e.file, version;
 		
-		if (file && e.mode==='text/javascript' && e.hints)
+		if (file && (e.mode==='text/javascript' ||
+			e.mode==='application/json') && e.hints)
 		{
 			version = Date.now();
 			
