@@ -30,7 +30,7 @@ var plugin = new ide.Plugin({
 			this.files[e.id] = { editor: e, version: version };
 			this.send({
 				e: e.id, p: ide.project.id,
-				f: file.id, $: version, js: e.getValue()
+				f: file.id, $: version, js: file.diff()
 			});
 		}
 	},
