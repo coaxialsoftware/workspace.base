@@ -55,7 +55,7 @@ plugin.extend({
 			var payload = jshint.data();
 
 			payload.$ = data.$;
-			payload.e = data.e;
+			payload.e = data.editor;
 
 			workspace.socket.respond(client, 'jshint', payload);
 
@@ -73,10 +73,33 @@ plugin.extend({
 	onMessage: function(client, data)
 	{
 		this.operation(`Linting file ${data.f}`, this.lintFile.bind(this, client,data));
+	},
+	
+	onAssist: function(done, data)
+	{
+		if (!(data.fileChanged &&
+			(data.mime ==='application/json' || data.mime==='application/javascript')))
+			return;
+		
+		var options = this.findOptions(data.project, data.file);
+		
+		jshint(data.content, options, options && options.globals);
+
+		var payload = jshint.data();
+		payload.$ = data.$;
+		payload.e = data.editor;
+		
+		workspace.socket.respond(data.client, 'jshint', payload);
+
+		if (payload.errors)
+			payload.errors.forEach(function(e) {
+				if (e)
+					this.error(`${e.line}:${e.character} ${e.reason}`);
+			}, this);
 	}
 	
 }).run(function() {
 	
-	workspace.plugins.on('socket.message.jshint', this.onMessage.bind(this));
+	workspace.plugins.on('assist', this.onAssist.bind(this));
 	
 });

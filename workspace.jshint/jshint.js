@@ -58,14 +58,10 @@ var plugin = new ide.Plugin({
 	onMessage: function(data)
 	{
 	var
-		f = this.files[data.e]
+		editor = ide.workspace.find(data.e)
 	;
-		if (f.version===data.$)
-		{
-			this.updateHints(f.editor, data.errors);
-			f.editor.jshint = data; 
-			delete this.files[data.e];
-		}
+		this.updateHints(editor, data.errors);
+		editor.jshint = data; 
 	},
 	
 	findFunction: function(editor, token, hints)
@@ -115,8 +111,6 @@ var plugin = new ide.Plugin({
 	{
 		this.files = {};
 		this.listenTo('socket.message.jshint', this.onMessage)
-			.listenTo('editor.change', this.getHints)
-			.listenTo('editor.load', this.getHints)
 			.listenTo('assist', this.onAssist)
 		;
 	}
