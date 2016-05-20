@@ -20,7 +20,10 @@ plugin.extend({
 		var c = project.configuration;
 		
 		if (fs.existsSync(project.path+'/.git'))
+		{
 			c.tags.git = true;
+			c.icons.push({ title: 'git', class:'git' });
+		}
 	},
 
 	readIgnore: function(project)

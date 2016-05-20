@@ -37,9 +37,9 @@ plugin.config(function() {
 					href: pkg.repository.url, class: 'database', title: 'Repository' });
 			if (pkg.bugs)
 				links.push({
-					href: pkg.bugs.url, class: 'bug', title: 'Bug Tracker' });
+					href: pkg.bugs.url || pkg.bugs, class: 'bug', title: 'Bug Tracker' });
 					
-			config.links = config.links ? config.links.concat(links) : links;
+			config.icons = config.icons ? config.icons.concat(links) : links;
 		}
 
 	});
