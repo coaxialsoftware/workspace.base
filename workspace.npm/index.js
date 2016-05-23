@@ -21,7 +21,7 @@ plugin.config(function() {
 
 		if (pkg)
 		{
-			config.tags.npm = true;
+			config.tags.npm = 'npm';
 			config.name = config.name || pkg.name;
 			config.version = config.version || pkg.version;
 			config.description = config.description || pkg.description;
