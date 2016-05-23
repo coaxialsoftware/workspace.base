@@ -18,11 +18,10 @@ plugin.extend({
 	onProjectCreate: function(project)
 	{
 		var c = project.configuration;
-		
+
 		if (fs.existsSync(project.path+'/.git'))
 		{
 			c.tags.git = true;
-			c.icons.push({ title: 'git', class:'git' });
 		}
 	},
 
@@ -32,7 +31,7 @@ plugin.extend({
 			.then(function(data) {
 				var f = data.trim().replace(/[\/\\]$/mg, '').split("\n");
 				var ignore = project.configuration.ignore || [];
-			
+
 				project.configuration.ignore =
 					_.compact(ignore.concat(f));
 			}, function() { });
@@ -46,7 +45,7 @@ plugin.extend({
 			project.resolve(this.readIgnore(project));
 		}
 	},
-	
+
 	reloadProject: function(project)
 	{
 		if (project.configuration.tags.git)
