@@ -20,7 +20,7 @@ plugin.config(function() {
 
 		if (pkg)
 		{
-			config.tags.bower = true;
+			config.tags.bower = 'bower';
 			config.name = config.name || pkg.name;
 			config.version = config.version || pkg.version;
 			config.description = config.description || pkg.description;

@@ -21,7 +21,7 @@ plugin.extend({
 
 		if (fs.existsSync(project.path+'/.git'))
 		{
-			c.tags.git = true;
+			c.tags.git = '<i title="git" class="fa fa-git"></i>';
 		}
 	},
 
