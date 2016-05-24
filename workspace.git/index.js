@@ -40,10 +40,9 @@ plugin.extend({
 	onProjectLoad: function(project)
 	{
 		if (project.configuration.tags.git)
-		{
 			project.ignore.push('.git');
-			project.resolve(this.readIgnore(project));
-		}
+
+		project.resolve(this.readIgnore(project));
 	},
 
 	reloadProject: function(project)
