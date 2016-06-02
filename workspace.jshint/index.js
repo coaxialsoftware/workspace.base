@@ -58,12 +58,6 @@ plugin.extend({
 			payload.e = data.editor;
 
 			workspace.socket.respond(client, 'jshint', payload);
-
-			if (payload.errors)
-				payload.errors.forEach(function(e) {
-					if (e)
-						me.error(`${e.line}:${e.character} ${e.reason}`);
-				});
 		});
 	},
 	
