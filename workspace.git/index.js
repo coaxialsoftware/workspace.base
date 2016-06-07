@@ -14,6 +14,8 @@ var
 ;
 
 plugin.extend({
+	
+	sourcePath: __dirname + '/git.js',
 
 	onProjectCreate: function(project)
 	{
@@ -49,8 +51,41 @@ plugin.extend({
 	{
 		if (project.configuration.tags.git)
 			project.reload();
-	}
+	},
+	
+	server: workspace.server
 
+}).route('GET', '/git/log', function(req, res) {
+var
+	file = req.query.f,
+	project = req.query.p,
+	cmd = `cd ${project} && git log --pretty=format:%H%n%an%n%at%n%f ${file}`,
+	REGEX = /(.+)\n(.+)\n(.+)\n(.+)/gm,
+	m, result = []
+;
+	function parse(res)
+	{
+		while((m = REGEX.exec(res))) {
+			result.push({ hash: m[1], tags: [ m[3] ], code: m[2], title: m[4] });
+		}
+		return result;
+	}
+	
+	common.respond(this, res, workspace.exec(cmd).then(parse));
+}).route('GET', '/git/show', function(req, res) {
+var
+	file = req.query.f,
+	project = req.query.p,
+	rev = req.query.h,
+	cmd = `cd ${project} && git show ${rev}:${file}`
+;
+	common.respond(
+		this, res,
+		workspace.exec(cmd, { plugin: this }).then(function(content) {
+			return { content: content, mime: workspace.File.getMime(file) };
+		})
+	);
+	
 }).config(function() {
 	workspace.plugins.on('project.create', this.onProjectCreate.bind(this));
 	workspace.plugins.on('project.load', this.onProjectLoad.bind(this));
