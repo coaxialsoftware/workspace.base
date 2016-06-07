@@ -2,10 +2,7 @@
 "use strict";
 
 var
-	GREP_REGEX = /^(?:\.\/)?(.+):(\d+):\s*(.+)\s*/,
-	ITEM_TEMPLATE = _.template('<button class="item" data-id="<%= obj.id %>">' +
-		'<h4><%- obj.filename%>:<%= obj.line %></h4>' +
-		'<pre><%- obj.match %></pre></button>')
+	GREP_REGEX = /^(?:\.\/)?(.+):(\d+):\s*(.+)\s*/
 ;
 
 function grepDone(editor, result)
@@ -20,21 +17,25 @@ var
 		match = GREP_REGEX.exec(result[i]);
 		if (match && (!ignore || !ignore.test(match[1])))
 			files.push({
-				line: match[2], filename: match[1], match: match[3] });
+				line: match[2],
+				value: match[1],
+				title: match[1] + ':' + match[2],
+				html: '<pre>' + _.escape(match[3]) + '</pre>'
+			});
 	}
 
 	editor.add(files);
 }
 
 ide.plugins.register('grep', {
-	
+
 	commands: {
 		grep: function(param)
 		{
 			return this.open({ plugin: this, file: param });
 		}
 	},
-	
+
 	open: function(options)
 	{
 		if (!options.file)
@@ -46,13 +47,12 @@ ide.plugins.register('grep', {
 		args = [],
 		env = ide.project.get('env'),
 
-		editor
+		editor = new ide.Editor.FileList({
+			file: term,
+			title: 'grep ' + term,
+			plugin: this, slot: options.slot
+		})
 	;
-		options.itemTemplate = ITEM_TEMPLATE;
-		options.title = 'grep ' + term;
-		
-		editor = new ide.Editor.FileList(options);
-
 		args.push('-0rnIP');
 
 		if (exclude instanceof Array)
@@ -73,7 +73,7 @@ ide.plugins.register('grep', {
 			pos = eol+1;
 		}).then(function(text) {
 			grepDone(editor, text.slice(pos));
-			
+
 			if (editor.items.length===0)
 				editor.$list.html('<div style="text-align:center">' +
 					'No matches found.</div>');
@@ -81,7 +81,7 @@ ide.plugins.register('grep', {
 
 		return editor;
 	}
-	
+
 });
-	
+
 })(this.ide, this.jQuery, this._);
