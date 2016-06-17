@@ -3,19 +3,41 @@
 "use strict";
 
 ide.plugins.register('git', new ide.Plugin({
-	
+
 	editorCommands: {
-		
+
 		git: function(cmd)
 		{
 			var file = ide.editor.file;
-			
-			if (file instanceof ide.File && cmd==='log')
+
+			if (cmd==='log' && file instanceof ide.File)
 				return this.gitLog({ file: file.get('filename') });
-		}
-		
+
+			return ide.Pass;
+		},
+
+		git2: [
+			{ cmd: 'log ?file', fn: 'gitLog', help: 'Show history for path' }
+		]
+
 	},
-	
+
+	commands: {
+
+		git2: [
+			{ cmd: 'status', fn: 'gitStatus', help: 'Show the working tree status' }
+			//{ cmd: 'commit', fn: 'gitCommit', help: 'Record changes to the repository' }
+		],
+
+		git: function(cmd)
+		{
+			if (cmd==='status')
+				return this.gitStatus({});
+
+			return ide.Pass;
+		}
+	},
+
 	gitShow: function(file, rev)
 	{
 		$.get('/git/show?f=' + file + '&h=' + rev + '&p=' + ide.project.id,
@@ -23,7 +45,23 @@ ide.plugins.register('git', new ide.Plugin({
 				ide.open(new ide.File(res));
 			});
 	},
-	
+
+	gitStatus: function(options)
+	{
+	var
+		editor = new ide.Editor.FileList({
+			slot: options.slot,
+			title: 'git status',
+			plugin: 'git.gitStatus'
+		})
+	;
+		$.get('/git/status', { p: ide.project.id }, function(res) {
+			editor.add(res);
+		});
+
+		return editor;
+	},
+
 	gitLog: function(options)
 	{
 	var
@@ -32,8 +70,8 @@ ide.plugins.register('git', new ide.Plugin({
 		editor = new ide.Editor.List({
 			slot: options.slot,
 			title: 'git log: ' + file,
-			file: 'log ' + file,
-			plugin: this,
+			file: file,
+			plugin: 'git.gitLog',
 			onItemClick: function(ev, item)
 			{
 				me.gitShow(file, item.hash);
@@ -43,19 +81,8 @@ ide.plugins.register('git', new ide.Plugin({
 		$.get('/git/log', { f: file, p: ide.project.id }, function(res) {
 			editor.add(res);
 		});
-		
-		return editor;
-	},
-	
-	open: function(options)
-	{
-		var cmd = options.file;
 
-		if (cmd.indexOf('log ')===0)
-		{
-			options.file = options.file.substr(4);
-			return this.gitLog(options);
-		}
+		return editor;
 	}
 
 }));

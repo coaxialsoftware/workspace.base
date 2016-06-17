@@ -10,11 +10,15 @@ var
 	_ = workspace._,
 
 	common = workspace.common,
-	plugin = module.exports = cxl('workspace.git')
+	plugin = module.exports = cxl('workspace.git'),
+
+	STATUS_CODE = {
+		'M': 'Modified'
+	}
 ;
 
 plugin.extend({
-	
+
 	sourcePath: __dirname + '/git.js',
 
 	onProjectCreate: function(project)
@@ -52,7 +56,7 @@ plugin.extend({
 		if (project.configuration.tags.git)
 			project.reload();
 	},
-	
+
 	server: workspace.server
 
 }).route('GET', '/git/log', function(req, res) {
@@ -70,7 +74,7 @@ var
 		}
 		return result;
 	}
-	
+
 	common.respond(this, res, workspace.exec(cmd).then(parse));
 }).route('GET', '/git/show', function(req, res) {
 var
@@ -85,7 +89,29 @@ var
 			return { content: content, mime: workspace.File.getMime(file) };
 		})
 	);
-	
+
+}).route('GET', '/git/status', function(req, res) {
+var
+	project = workspace.projectManager.getProject(req.query.p),
+	cmd = `git status --porcelain -uno`,
+	REGEX = /(.)(.) (.+)/gm,
+	m, result = [], tag
+;
+	function parse(content)
+	{
+		while ((m = REGEX.exec(content))) {
+			tag = STATUS_CODE[m[2]];
+			result.push({
+				title: m[3], tags: tag && [ tag ]
+			});
+		}
+
+		return result;
+	}
+
+	common.respond(this, res, project.exec(cmd, { plugin: this })
+		.then(parse));
+
 }).config(function() {
 	workspace.plugins.on('project.create', this.onProjectCreate.bind(this));
 	workspace.plugins.on('project.load', this.onProjectLoad.bind(this));
