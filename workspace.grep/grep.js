@@ -74,7 +74,7 @@ ide.plugins.register('grep', {
 		}).then(function(text) {
 			grepDone(editor, text.slice(pos));
 
-			if (editor.items.length===0)
+			if (editor.children.length===0)
 				editor.$list.html('<div style="text-align:center">' +
 					'No matches found.</div>');
 		});

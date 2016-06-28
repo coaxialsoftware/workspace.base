@@ -18,7 +18,6 @@ plugin.config(function() {
 		config = project.configuration,
 		links
 	;
-
 		if (pkg)
 		{
 			config.tags.npm = 'npm';

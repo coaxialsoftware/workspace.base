@@ -1,6 +1,7 @@
 
 var
 	jshint = require('jshint').JSHINT,
+	fixmyjs = require('fixmyjs'),
 	path = require('path'),
 	fs = require('fs'),
 	
@@ -37,28 +38,36 @@ plugin.extend({
 		}
 	},
 	
+	doLint: function(client, options, data, js)
+	{
+		jshint(js, options, options && options.globals);
+
+		var payload = jshint.data();
+
+		payload.$ = data.$;
+		payload.e = data.editor;
+
+		workspace.socket.respond(client, 'jshint', payload);
+		
+		return payload;
+	},
+	
 	lintFile: function(client, data)
 	{
 	var
-		me = this,
-		options = me.findOptions(data.p, data.f),
-		js
+		options = this.findOptions(data.p, data.f)
 	;
-		fs.readFile(data.f, 'utf8', function(err, file) {
-			
-			if (err)
-				file = '';
-			
-			js = common.patch(file, data.js);
-			jshint(js, options, options && options.globals);
-			
-			var payload = jshint.data();
-
-			payload.$ = data.$;
-			payload.e = data.editor;
-
-			workspace.socket.respond(client, 'jshint', payload);
-		});
+		common.readFile(data.f)
+			.then(this.doLint.bind(this, client, options, data));
+	},
+	
+	fixFile: function(client, data)
+	{
+	var
+		op = this.findOptions(data.p, data.f) || {},
+		fix = fixmyjs.fix(data.js, op)
+	;
+		console.log(fix);
 	},
 	
 	/**
@@ -66,7 +75,10 @@ plugin.extend({
 	 */
 	onMessage: function(client, data)
 	{
-		this.operation(`Linting file ${data.f}`, this.lintFile.bind(this, client,data));
+		if (data.op==='lint')
+			this.operation(`Linting file ${data.f}`, this.lintFile.bind(this, client,data));
+		else if (data.op==='fix')
+			this.operation(`Fixing file ${data.f}`, this.fixFile.bind(this, client, data));
 	},
 	
 	onAssist: function(done, data)
@@ -76,24 +88,12 @@ plugin.extend({
 			return;
 		
 		var options = this.findOptions(data.project, data.file);
-		
-		jshint(data.content, options, options && options.globals);
-
-		var payload = jshint.data();
-		payload.$ = data.$;
-		payload.e = data.editor;
-		
-		workspace.socket.respond(data.client, 'jshint', payload);
-
-		if (payload.errors)
-			payload.errors.forEach(function(e) {
-				if (e)
-					this.error(`${e.line}:${e.character} ${e.reason}`);
-			}, this);
+		this.doLint(data.client, options, data, data.content);
 	}
 	
 }).run(function() {
 	
 	workspace.plugins.on('assist', this.onAssist.bind(this));
+	workspace.plugins.on('socket.message.jshint', this.onMessage.bind(this));
 	
 });
