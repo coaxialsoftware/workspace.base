@@ -112,6 +112,13 @@ var
 	common.respond(this, res, project.exec(cmd, { plugin: this })
 		.then(parse));
 
+}).route('GET', '/git/pull', function(req, res) {
+var
+	project = workspace.projectManager.getProject(req.query.p),
+	cmd = 'git pull'
+;
+	common.respond(this, res, project.exec(cmd, { plugin: this }));
+	
 }).config(function() {
 	workspace.plugins.on('project.create', this.onProjectCreate.bind(this));
 	workspace.plugins.on('project.load', this.onProjectLoad.bind(this));

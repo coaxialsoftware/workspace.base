@@ -7,8 +7,9 @@ ide.plugins.register('git', new ide.Plugin({
 	commands: {
 		git: [
 			{ cmd: 'status', fn: 'gitStatus', help: 'Show the working tree status' },
-			{ cmd: 'log @file', fn: 'gitLog', help: 'Show history for path' }
+			{ cmd: 'log @file', fn: 'gitLog', help: 'Show history for path' },
 			//{ cmd: 'commit', fn: 'gitCommit', help: 'Record changes to the repository' }
+			{ cmd: 'pull', fn: 'gitPull', help: 'Fetch from and integrate with another repository' }
 		]
 	},
 
@@ -18,6 +19,13 @@ ide.plugins.register('git', new ide.Plugin({
 			function(res) {
 				ide.open(new ide.File(res));
 			});
+	},
+	
+	gitPull: function()
+	{
+		$.get('/git/pull', { p: ide.project.id }, function(res) {
+			ide.open(new ide.File({ content: res }));
+		});
 	},
 
 	gitStatus: function(options)
