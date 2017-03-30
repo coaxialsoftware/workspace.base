@@ -60,15 +60,6 @@ plugin.extend({
 			.then(this.doLint.bind(this, client, options, data));
 	},
 
-	fixFile: function(client, data)
-	{
-	/*var
-		op = this.findOptions(data.p, data.f) || {},
-		fix = fixmyjs.fix(data.js, op)
-	;
-		console.log(fix);*/
-	},
-
 	/**
 	 * data: { $:id, p:project, f:path, js:code }
 	 */
@@ -76,8 +67,6 @@ plugin.extend({
 	{
 		if (data.op==='lint')
 			this.operation(`Linting file ${data.f}`, this.lintFile.bind(this, client,data));
-		else if (data.op==='fix')
-			this.operation(`Fixing file ${data.f}`, this.fixFile.bind(this, client, data));
 	},
 
 	onAssist: function(done, data)

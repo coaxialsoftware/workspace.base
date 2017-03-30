@@ -39,7 +39,7 @@ ide.plugins.register('shell', new ide.Plugin({
 		mkdir: function()
 		{
 			shell('mkdir', Array.prototype.slice.call(arguments, 0))
-				.then(ide.notify.bind(this, "[shell] mkdir success."));
+				.then(ide.notify.bind(this, { code: 'shell', title: 'mkdir success.' }));
 		}
 
 	}

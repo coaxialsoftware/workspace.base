@@ -1,4 +1,4 @@
-(function(ide, $, _, undefined) {
+(function(ide, cxl) {
 "use strict";
 
 var
@@ -16,12 +16,12 @@ var
 	{
 		match = GREP_REGEX.exec(result[i]);
 		if (match && (!ignore || !ignore.test(match[1])))
-			files.push({
+			files.push(new ide.Item({
 				line: match[2],
 				value: match[1],
 				title: match[1] + ':' + match[2],
-				html: '<pre>' + _.escape(match[3]) + '</pre>'
-			});
+				html: '<pre>' + cxl.escape(match[3]) + '</pre>'
+			}));
 	}
 
 	editor.add(files);
@@ -30,58 +30,51 @@ var
 ide.plugins.register('grep', {
 
 	commands: {
-		grep: function(param)
+		grep: function(term)
 		{
-			return this.open({ plugin: this, file: param });
-		}
-	},
+			if (!term)
+				return;
+		var
+			pos = 0,
+			exclude = ide.project.get('ignore'),
+			args = [],
+			env = ide.project.get('env'),
 
-	open: function(options)
-	{
-		if (!options.file)
-			return;
-	var
-		pos = 0,
-		term = options.file,
-		exclude = ide.project.get('ignore'),
-		args = [],
-		env = ide.project.get('env'),
+			editor = new ide.ListEditor({
+				title: 'grep ' + term,
+				plugin: this
+			})
+		;
+			args.push('-0rnIP');
 
-		editor = new ide.Editor.FileList({
-			file: term,
-			title: 'grep ' + term,
-			plugin: this, slot: options.slot
-		})
-	;
-		args.push('-0rnIP');
+			if (exclude instanceof Array)
+				exclude.forEach(function(f) {
+					var d = f.replace(/ /g, '\\ ').replace(/\/$/, '');
+					args.push('--exclude-dir=' + d + '',
+						'--exclude=' + d);
+				});
 
-		if (exclude instanceof Array)
-			exclude.forEach(function(f) {
-				var d = f.replace(/ /g, '\\ ').replace(/\/$/, '');
-				args.push('--exclude-dir=' + d + '',
-					'--exclude=' + d);
+			// Fix for linux?
+			args.push(term, env && env.WINDIR ? '*' : '.');
+
+			cxl.ajax.post('/grep', { q: args, p: ide.project.id }, function(a)
+			{
+				var eol = a.target.responseText.lastIndexOf("\n") || a.loaded;
+
+				grepDone(editor, a.target.responseText.slice(pos, eol));
+				pos = eol+1;
+			}).then(function(text) {
+				grepDone(editor, text.slice(pos));
+
+				if (editor.children.length===0)
+					editor.$list.html('<div style="text-align:center">' +
+						'No matches found.</div>');
 			});
 
-		// Fix for linux?
-		args.push(term, env && env.WINDIR ? '*' : '.');
-
-		ide.post('/grep', { q: args, p: ide.project.id }, function(a)
-		{
-			var eol = a.target.responseText.lastIndexOf("\n") || a.loaded;
-
-			grepDone(editor, a.target.responseText.slice(pos, eol));
-			pos = eol+1;
-		}).then(function(text) {
-			grepDone(editor, text.slice(pos));
-
-			if (editor.children.length===0)
-				editor.$list.html('<div style="text-align:center">' +
-					'No matches found.</div>');
-		});
-
-		return editor;
+			return editor;
+		}
 	}
 
 });
 
-})(this.ide, this.jQuery, this._);
+})(this.ide, this.cxl);

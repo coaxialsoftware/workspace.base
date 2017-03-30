@@ -23,7 +23,7 @@ var worker = new ide.Worker({
 	
 	findFunctionByPos: function(data)
 	{
-		return this.findFunctionAtCursor(data.line, data.ch, data.functions);
+		return this.findFunctionAtCursor(data.row, data.column, data.functions);
 	},
 	
 	findFunctionByName: function(data) {
@@ -137,7 +137,10 @@ var plugin = new ide.Plugin({
 
 		if (errors)
 		{
-			ide.notify(errors.length + ' JSHINT error(s) found.', 'error');
+			editor.header.setTag('jshint', '<i class="fa fa-exclamation-circle text-error"' +
+				' title="jshint: ' +
+				errors.length + ' errors(s) found."></i>', 'label-transparent');
+			
 			errors.forEach(function(e) {
 				if (e)
 					editor.hints.add('jshint', {
@@ -149,7 +152,8 @@ var plugin = new ide.Plugin({
 						evidence: e.evidence
 					});
 			});
-		}
+		} else
+			editor.header.setTag('jshint', undefined, 'hidden');
 	},
 
 	onMessage: function(data)
@@ -157,7 +161,9 @@ var plugin = new ide.Plugin({
 	var
 		editor = ide.workspace.find(data.e)
 	;
-		this.updateHints(editor, data.errors);
+		if (editor.hints)
+			this.updateHints(editor, data.errors);
+		
 		editor.__jshint = data;
 	},
 
@@ -177,8 +183,8 @@ var plugin = new ide.Plugin({
 			if (data)
 			{
 				worker.post('findFunction', {
-					line: token.line+1, ch: token.ch, functions: data.functions,
-					token: token.string
+					row: token.row+1, column: token.column, functions: data.functions,
+					token: token.value
 				}, done);
 			}
 
@@ -191,8 +197,8 @@ var plugin = new ide.Plugin({
 	{
 	var
 		data = editor.__jshint,
-		fn = token && data && findFunctionAtCursor(token.line, token.ch, data.functions),
-		str = token.string,
+		fn = token && data && findFunctionAtCursor(token.row+1, token.column, data.functions),
+		str = token.value,
 		hints = [],
 		globals = data && data.globals
 	;
@@ -200,7 +206,7 @@ var plugin = new ide.Plugin({
 		{
 			fn.param.forEach(function(h) {
 				if (h.indexOf(str)===0)
-					hints.push({ title: h });
+					hints.push({ title: h, icon: 'variable' });
 			});
 
 			if (globals)

@@ -24,7 +24,7 @@ ide.plugins.register('git', new ide.Plugin({
 	gitPull: function()
 	{
 		$.get('/git/pull', { p: ide.project.id }, function(res) {
-			ide.open(new ide.File({ content: res }));
+			ide.open(new ide.File({ content: res, new: false }));
 		});
 	},
 
