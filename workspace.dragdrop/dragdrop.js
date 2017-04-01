@@ -5,7 +5,7 @@
  *
  */
 
-(function(ide) {
+(function(ide, window) {
 "use strict";
 
 ide.plugins.register('dragdrop', {
@@ -18,10 +18,10 @@ ide.plugins.register('dragdrop', {
 
 	on_readfile: function(file, ev)
 	{
-		ide.open({
-			filename: file.name,
-			content: ev.target.result
-		});
+		var newFile = new ide.File(file.name);
+		newFile.content = ev.target.result;
+		
+		ide.open({ file: newFile });
 	},
 
 	on_drop: function(ev)
@@ -34,7 +34,7 @@ ide.plugins.register('dragdrop', {
 
 		for (; i < files.length; i++)
 		{
-			reader = new FileReader();
+			reader = new window.FileReader();
 			reader.onload = this.on_readfile.bind(this, files[i]);
 			reader.readAsText(files[i]);
 		}
@@ -48,4 +48,4 @@ ide.plugins.register('dragdrop', {
 
 });
 
-})(this.ide);
+})(this.ide, this);

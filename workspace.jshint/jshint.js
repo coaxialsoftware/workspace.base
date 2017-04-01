@@ -82,19 +82,28 @@ var plugin = new ide.Plugin({
 				else
 					return ide.Pass;
 			}
-		} ]
+		} ],
+		
+		jshint: {
+			fn: function() {
+				var e = ide.editor, file = e.file, version;
+
+				if (file && (e.mode==='text/javascript' ||
+					e.mode==='application/json') && e.hints)
+				{
+					version = Date.now();
+
+					ide.socket.send('jshint', {
+						editor: e.id, p: ide.project.id, op: 'lint',
+						f: file.id, $: version, js: file.diff()
+					});
+				}
+			},
+			description: 'Run jshint for current editor'
+		}
 		
 	},
 
-	commands: {
-
-		jshint: [
-			{ fn: 'getHints', help: 'Run jshint for current editor', editor: true },
-			{ cmd: 'fix', fn: 'fix', help: 'Fix current line jshint error', editor: true }
-		]
-
-	},
-	
 	fix: function()
 	{
 	var
@@ -112,22 +121,6 @@ var plugin = new ide.Plugin({
 			
 			ide.socket.send('jshint',
 				{ op: 'fix', js: str, p: ide.project.id, f: file.id });
-		}
-	},
-
-	getHints: function()
-	{
-		var e = ide.editor, file = e.file, version;
-
-		if (file && (e.mode==='text/javascript' ||
-			e.mode==='application/json') && e.hints)
-		{
-			version = Date.now();
-
-			ide.socket.send('jshint', {
-				e: e.id, p: ide.project.id, op: 'lint',
-				f: file.id, $: version, js: file.diff()
-			});
 		}
 	},
 
@@ -175,7 +168,7 @@ var plugin = new ide.Plugin({
 		{
 			data = editor.__jshint;
 			
-			hints = editor.hints.getLine('jshint', token.line).map(function(h) {
+			hints = editor.hints.getLine('jshint', token.row).map(function(h) {
 				return { code: 'jshint', title: h.title,
 					className: h.className, priority: 5 };
 			});
