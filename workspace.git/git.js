@@ -18,7 +18,8 @@ ide.plugins.register('git', new ide.Plugin({
 
 				return editor;
 			},
-			description: 'Show the working tree status'
+			description: 'Show the working tree status',
+			icon: 'git'
 		},
 		'git.log': {
 			fn: function(file)
@@ -32,8 +33,7 @@ ide.plugins.register('git', new ide.Plugin({
 
 				editor = new ide.ListEditor({
 					title: 'git log: ' + file,
-					plugin: this,
-					itemClass: ide.FileItem
+					plugin: this
 				});
 
 				cxl.ajax.get('/git/log', { f: file, p: ide.project.id }).then(function(res) {
@@ -42,7 +42,8 @@ ide.plugins.register('git', new ide.Plugin({
 
 				return editor;
 			},
-			description: 'Show history for path'
+			description: 'Show history for path',
+			icon: 'git'
 		},
 		'git.pull': {
 			fn: function()
@@ -51,7 +52,8 @@ ide.plugins.register('git', new ide.Plugin({
 					ide.open(new ide.File({ content: res, new: false }));
 				});
 			},
-			description: 'Fetch from and integrate with another repository'
+			description: 'Fetch from and integrate with another repository',
+			icon: 'git'
 		}
 	},
 
@@ -64,5 +66,6 @@ ide.plugins.register('git', new ide.Plugin({
 	}
 	
 }));
+
 
 })(this.ide);

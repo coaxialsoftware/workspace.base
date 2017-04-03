@@ -16,7 +16,7 @@ var
 	{
 		match = GREP_REGEX.exec(result[i]);
 		if (match && (!ignore || !ignore.test(match[1])))
-			files.push(new ide.Item({
+			files.push(new ide.FileItem({
 				line: match[2],
 				value: match[1],
 				title: match[1] + ':' + match[2],

@@ -1,5 +1,5 @@
 
-(function(ide, _) {
+(function(ide) {
 "use strict";
 	
 function findFunctionAtCursor(line, ch, functions)
@@ -68,21 +68,23 @@ var plugin = new ide.Plugin({
 	
 	editorCommands: {
 		
-		ijump: [ {
+		ijump: {
 			help: 'Jump to definition of identifier',
 			fn: function()
 			{
 			var
-				token = ide.editor.token,
+				token = ide.editor.token.current,
 				jshint = ide.editor.__jshint,
-				fn = token && _.find(jshint.functions, { name: token.string })
+				fn = token && jshint.functions.find(function(f) {
+					return f.name===token.value;
+				})
 			;
 				if (fn)
-					ide.editor.go(fn.line, fn.character);
+					ide.editor.cursor.go(fn.line, fn.character);
 				else
 					return ide.Pass;
 			}
-		} ],
+		},
 		
 		jshint: {
 			fn: function() {
@@ -130,9 +132,8 @@ var plugin = new ide.Plugin({
 
 		if (errors)
 		{
-			editor.header.setTag('jshint', '<i class="fa fa-exclamation-circle text-error"' +
-				' title="jshint: ' +
-				errors.length + ' errors(s) found."></i>', 'label-transparent');
+			editor.header.setTag('jshint', '<span title="jshint: ' +
+				errors.length + ' errors(s) found.">jshint</span>', 'error');
 			
 			errors.forEach(function(e) {
 				if (e)
@@ -192,25 +193,35 @@ var plugin = new ide.Plugin({
 		data = editor.__jshint,
 		fn = token && data && findFunctionAtCursor(token.row+1, token.column, data.functions),
 		str = token.value,
-		hints = [],
-		globals = data && data.globals
+		hints,
+		globals = data && data.globals,
+		p, index
 	;
-		if (data && fn && fn.param && str)
-		{
+		if (!data || !str)
+			return;
+		
+		hints = [];
+		
+		if (token.type==='variable' && fn && fn.param)
 			fn.param.forEach(function(h) {
 				if (h.indexOf(str)===0)
 					hints.push({ title: h, icon: 'variable' });
 			});
 
-			if (globals)
-				globals.forEach(function(g) {
-					if (g.indexOf(str)===0)
-						hints.push({ title: g, icon: 'globe' });
-				});
-
-			if (hints.length)
-				done(hints);
+		if (token.type==='variable' && globals)
+			globals.forEach(function(g) {
+				if (g.indexOf(str)===0)
+					hints.push({ title: g, icon: 'variable-global' });
+			});
+		else if (token.type==='property' && data.member)
+		{
+			for (p in data.member)
+				if ((index = p.indexOf(str))!==-1)
+					hints.push({ title: p, icon: 'property', priority: index+5 });
 		}
+
+		if (hints.length)
+			done(hints);
 	},
 
 	ready: function()
