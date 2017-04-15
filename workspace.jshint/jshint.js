@@ -1,5 +1,5 @@
 
-(function(ide) {
+(function(ide, cxl) {
 "use strict";
 	
 function findFunctionAtCursor(line, ch, functions)
@@ -69,7 +69,7 @@ var plugin = new ide.Plugin({
 	editorCommands: {
 		
 		ijump: {
-			help: 'Jump to definition of identifier',
+			description: 'Jump to definition of identifier',
 			fn: function()
 			{
 			var
@@ -146,8 +146,11 @@ var plugin = new ide.Plugin({
 						evidence: e.evidence
 					});
 			});
+			
 		} else
 			editor.header.setTag('jshint', undefined, 'hidden');
+		
+		ide.assist.requestHints();
 	},
 
 	onMessage: function(data)
@@ -236,4 +239,4 @@ var plugin = new ide.Plugin({
 
 ide.plugins.register('jshint', plugin);
 
-})(this.ide, this._);
+})(this.ide, this.cxl);
