@@ -1,20 +1,19 @@
 
-(function(ide, $, _, undefined) {
+(function(ide, cxl) {
 "use strict";
 
 /**
  * Calls shell service and returns a Promise.
  */
-function shell(cmd, args, onprogress)
+function shell(cmd, args)
 {
-	return ide.post(
+	return cxl.ajax.post(
 		'/shell',
-		{ c: cmd, q: args, p: ide.project.get('path') },
-		onprogress
+		{ c: cmd, q: args, p: ide.project.get('path') }
 	);
 }
 
-function cmd(name, args, onprogress)
+/*function cmd(name, args, onprogress)
 {
 	args = Array.prototype.slice.call(args, 0);
 	shell(name, args, onprogress)
@@ -24,22 +23,20 @@ function cmd(name, args, onprogress)
 			ide.open({ file: file });
 		})
 	;
-}
+}*/
 
 ide.plugins.register('shell', new ide.Plugin({
 
 	commands: {
 
-		shell: function(command)
-		{
-			var args = Array.prototype.slice.call(arguments, 1);
-			cmd(command, args);
-		},
-
-		mkdir: function()
-		{
-			shell('mkdir', Array.prototype.slice.call(arguments, 0))
-				.then(ide.notify.bind(this, { code: 'shell', title: 'mkdir success.' }));
+		mkdir: {
+			fn: function()
+			{
+				shell('mkdir', Array.prototype.slice.call(arguments, 0))
+					.then(ide.notify.bind(this, { code: 'shell', title: 'mkdir success.' }));
+			},
+			
+			description: 'Create directory'
 		}
 
 	}
@@ -47,4 +44,4 @@ ide.plugins.register('shell', new ide.Plugin({
 
 }));
 
-})(this.ide, this.jQuery, this._);
+})(this.ide, this.cxl);

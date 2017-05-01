@@ -1,5 +1,5 @@
 
-(function(ide, cxl) {
+(function(ide) {
 "use strict";
 	
 function findFunctionAtCursor(line, ch, functions)
@@ -189,13 +189,33 @@ var plugin = new ide.Plugin({
 				done(hints);
 		}
 	},
+	
+	getHints: function(list, term, hints, icon)
+	{
+		var i=0, l=list.length, p, index;
+		
+		for (;i<l;i++)
+		{
+			p = list[i];
+			if ((index = p.indexOf(term))!==-1)
+				hints.push(this.getHintDef(p, icon, index, term.length));
+		}
+	},
+	
+	getHintDef: function(title, icon, index, length)
+	{
+		return {
+			title: title, icon: icon, priority: index+5,
+			matchStart: index, matchEnd: index+length
+		};
+	},
 
 	onAssistInline: function(done, editor, token)
 	{
 	var
 		data = editor.__jshint,
 		fn = token && data && findFunctionAtCursor(token.row+1, token.column, data.functions),
-		str = token.value,
+		str = token.cursorValue,
 		hints,
 		globals = data && data.globals,
 		p, index
@@ -206,21 +226,15 @@ var plugin = new ide.Plugin({
 		hints = [];
 		
 		if (token.type==='variable' && fn && fn.param)
-			fn.param.forEach(function(h) {
-				if (h.indexOf(str)===0)
-					hints.push({ title: h, icon: 'variable' });
-			});
+			this.getHints(fn.param, str, hints, 'variable');
 
 		if (token.type==='variable' && globals)
-			globals.forEach(function(g) {
-				if (g.indexOf(str)===0)
-					hints.push({ title: g, icon: 'variable-global' });
-			});
+			this.getHints(globals, str, hints, 'variable-global');
 		else if (token.type==='property' && data.member)
 		{
 			for (p in data.member)
 				if ((index = p.indexOf(str))!==-1)
-					hints.push({ title: p, icon: 'property', priority: index+5 });
+					hints.push(this.getHintDef(p, 'property', index, str.length));
 		}
 
 		if (hints.length)
@@ -239,4 +253,4 @@ var plugin = new ide.Plugin({
 
 ide.plugins.register('jshint', plugin);
 
-})(this.ide, this.cxl);
+})(this.ide);
