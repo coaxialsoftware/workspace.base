@@ -6,10 +6,61 @@
 "use strict";
 
 var
-	plugin = module.exports = cxl('workspace.npm')
+	plugin = module.exports = cxl('workspace.npm'),
+	NPM_OPTIONS = {
+		'"name"': { description: 'Package Name' },
+		'"version"': { description: 'Package Version' },
+		'"description"': { description: 'Package Description' },
+		'"keywords"': { description: 'Put keywords in it.' },
+		'"homepage"': { description: 'The url to the project homepage' },
+		'"bugs"': { description: 'Issue tracker URL' },
+		'"license"': {},
+		'"author"': {},
+		'"contributors"': {},
+		'"files"': {},
+		'"main"': {},
+		'"bin"': {},
+		'"man"': {},
+		'"directories"': {},
+		'"repository"': {},
+		'"scripts"': {},
+		'"config"': {},
+		'"dependencies"': {},
+		'"devDependencies"': {},
+		'"peerDependencies"': {},
+		'"bundledDependencies"': {},
+		'"optionalDependencies"': {},
+		'"engines"': {},
+		'"engineStrict"': {},
+		'"os"': {},
+		'"cpu"': {},
+		'"preferGlobal"': {},
+		'"private"': {},
+		'"publishConfig"': {}
+	}
 ;
 
+class NPMLanguageServer extends workspace.LanguageServer {
+	
+	onInlineAssist(done, data)
+	{
+		var result;
+		
+		if (data.token.type==='string property')
+		{
+			result = this.findObject(NPM_OPTIONS, data.token.cursorValue);
+
+			if (result.length)
+				done(result);
+		}
+	}
+	
+}
+
 plugin.config(function() {
+	
+	for (var i in NPM_OPTIONS)
+		NPM_OPTIONS[i].icon = 'npm';
 
 	workspace.plugins.on('project.create', function(project) {
 
@@ -47,5 +98,6 @@ plugin.config(function() {
 		if (project.configuration.tags.npm)
 			project.ignore.push('node_modules');
 	});
-
+	
+	this.$ls = new NPMLanguageServer('npm', /application\/json/, /package\.json/);
 });
