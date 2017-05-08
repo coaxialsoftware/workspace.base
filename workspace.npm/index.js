@@ -48,7 +48,7 @@ class NPMLanguageServer extends workspace.LanguageServer {
 		
 		if (data.token.type==='string property')
 		{
-			result = this.findObject(NPM_OPTIONS, data.token.cursorValue);
+			result = this.findObject(NPM_OPTIONS, data.token.cursorValue, Object.assign);
 
 			if (result.length)
 				done(result);
