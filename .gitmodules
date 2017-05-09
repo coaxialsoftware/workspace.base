@@ -1,0 +1,6 @@
+[submodule "tern"]
+	path = tern
+	url = https://github.com/ternjs/tern
+[submodule "autocomplete-css"]
+	path = autocomplete-css
+	url = https://github.com/atom/autocomplete-css
