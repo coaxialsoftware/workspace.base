@@ -9,7 +9,7 @@ class CSSLanguageServer extends workspace.LanguageServer {
 
 	constructor()
 	{
-		super('css', /text\/(?:css|less|sass)/);
+		super('css', /text\/(?:css|less|sass|x-scss)/);
 	}
 
 	tag(match)
@@ -59,6 +59,10 @@ class CSSLanguageServer extends workspace.LanguageServer {
 
 		switch (token.type) {
 		case 'tag':
+			// LESS files send tag type for properties
+			if (data.mime!=='text/css')
+				done(this.findObject(DEFS.properties, token.cursorValue, this.property));
+
 			return done(this.findArray(DEFS.tags, token.cursorValue, this.tag));
 		case 'property error':
 		case 'property':

@@ -1,8 +1,9 @@
 {
 	"name": "@cxl/workspace.css",
 	"version": "0.0.1",
+	"description": "CSS Assist",
+	"public": true,
 	"scripts": {
 		"prepublishOnly": "cp ../autocomplete-css/completions.json completions.json"
 	}
-
 }

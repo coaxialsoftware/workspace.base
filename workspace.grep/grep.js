@@ -20,7 +20,7 @@ var
 				line: match[2],
 				value: match[1],
 				title: match[1] + ':' + match[2],
-				html: '<pre>' + cxl.escape(match[3]) + '</pre>'
+				description: '<pre>' + cxl.escape(match[3]) + '</pre>'
 			}));
 	}
 
