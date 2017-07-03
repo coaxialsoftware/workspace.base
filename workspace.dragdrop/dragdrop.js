@@ -8,7 +8,9 @@
 (function(ide, window) {
 "use strict";
 
-ide.plugins.register('dragdrop', {
+ide.plugins.register('dragdrop', new ide.Plugin({
+
+	$dest: null,
 
 	on_dragover: function(ev)
 	{
@@ -16,12 +18,68 @@ ide.plugins.register('dragdrop', {
 		ev.dataTransfer.dropEffect = 'copy';
 	},
 
+	on_dragenter: function(ev)
+	{
+		var dest = '';
+
+		if (ev.ctrlKey)
+			dest = this.findDestination(ev.target);
+
+		this.$entered = true;
+
+		if (dest !== this.$dest)
+		{
+			this.$dest = dest;
+			this.updateHint(ev.dataTransfer.items, ev.ctrlKey, dest);
+		}
+	},
+
+	updateHint: function(items, ctrl, dest)
+	{
+		this.$hint = ide.notify({
+			id: 'dragdrop',
+			code: 'dragdrop',
+			title: 'Dragging ' + items.length + ' items' + (dest ? ' to ' + dest : ''),
+			progress: 0
+		});
+	},
+
 	on_readfile: function(file, ev)
 	{
 		var newFile = new ide.File(file.name);
 		newFile.content = ev.target.result;
-		
 		ide.open({ file: newFile });
+	},
+
+	upload: function(file, ev)
+	{
+		var newFile = new ide.File(this.$dest + file.name);
+		newFile.content = Array.from(ev.target.result);
+		newFile.write();
+	},
+
+	findEditor: function(el)
+	{
+		var editor;
+
+		do {
+			editor = el.$editor;
+			el = el.parentNode;
+		} while (el && !editor);
+
+		return editor;
+	},
+
+	findDestination: function(el)
+	{
+	var
+		editor = this.findEditor(el),
+		dir = ''
+	;
+		if (editor && editor.file && editor.file.attributes.directory)
+			dir = editor.file.filename + '/';
+
+		return dir;
 	},
 
 	on_drop: function(ev)
@@ -35,17 +93,31 @@ ide.plugins.register('dragdrop', {
 		for (; i < files.length; i++)
 		{
 			reader = new window.FileReader();
-			reader.onload = this.on_readfile.bind(this, files[i]);
-			reader.readAsText(files[i]);
+			reader.onload = (ev.ctrlKey ? this.upload : this.on_readfile).bind(this, files[i]);
+			reader.readAsArrayBuffer(files[i]);
 		}
+	},
+
+	onEnd: function()
+	{
+		if (!this.$entered && this.$hint)
+		{
+			ide.logger.remove(this.$hint);
+			this.$hint = this.$dest = null;
+		}
+
+		this.$entered = false;
 	},
 
 	start: function()
 	{
-		window.addEventListener('dragover', this.on_dragover.bind(this));
-		window.addEventListener('drop', this.on_drop.bind(this));
+		this.listenToElement(window, 'dragover', this.on_dragover.bind(this));
+		this.listenToElement(window, 'dragenter', this.on_dragenter.bind(this));
+		this.listenToElement(window, 'drop', this.on_drop.bind(this));
+		this.listenToElement(window, 'dragleave', this.onEnd.bind(this));
+		//this.listenToElement(window, 'dragleave', this.onEnd.bind(this));
 	}
 
-});
+}));
 
 })(this.ide, this);

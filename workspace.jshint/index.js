@@ -14,9 +14,11 @@ plugin.extend({
 
 	findOptions: function(p, f)
 	{
-		var file = path.dirname(f) + '/.jshintrc', data;
-
-		if (!fs.existsSync(file))
+	var
+		dir = f ? path.dirname(f) : p,
+		file = dir + '/.jshintrc', data
+	;
+		if (!fs.existsSync(file) && f)
 		{
 			file = p + '/.jshintrc';
 			if (!fs.existsSync(file))
@@ -71,12 +73,28 @@ plugin.extend({
 
 	onAssist: function(done, data)
 	{
+		var hints, payload, options, row;
+
 		if (!(data.fileChanged &&
 			(data.mime ==='application/json' || data.mime==='application/javascript')))
 			return;
 
-		var options = this.findOptions(data.project, data.file);
-		this.doLint(data.client, options, data, data.content);
+		options = this.findOptions(data.project, data.file);
+		payload = this.doLint(data.client, options, data, data.content);
+
+		if (payload.errors && data.token)
+		{
+			row = data.token.row+1;
+
+			hints = payload.errors.filter(function(e) {
+				return e && e.line === row;
+			}).map(function(e) {
+				return { code: 'jshint', title: e.reason,
+					className: e.id==='(error)' ? 'error' : 'warn', priority: 5 };
+			});
+
+			done(hints);
+		}
 	}
 
 }).run(function() {

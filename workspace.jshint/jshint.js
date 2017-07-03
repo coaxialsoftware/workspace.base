@@ -1,7 +1,7 @@
 
 (function(ide) {
 "use strict";
-	
+
 function findFunctionAtCursor(line, ch, functions)
 {
 var
@@ -10,22 +10,22 @@ var
 	while (l--)
 	{
 		fn = functions[l];
-		
+
 		if ((line===fn.line && ch>=fn.character || line > fn.line) &&
 			(line===fn.last && ch <= fn.lastcharacter || line < fn.last))
 			return fn;
 	}
 }
-	
+
 var worker = new ide.Worker({
-	
+
 	findFunctionAtCursor: findFunctionAtCursor,
-	
+
 	findFunctionByPos: function(data)
 	{
 		return this.findFunctionAtCursor(data.row, data.column, data.functions);
 	},
-	
+
 	findFunctionByName: function(data) {
 	var
 		functions = data.functions,
@@ -36,7 +36,7 @@ var worker = new ide.Worker({
 		}))
 			return { title: 'Go to definition', action: 'ijump' };
 	},
-	
+
 	findFunction: function(data)
 	{
 	var
@@ -51,13 +51,13 @@ var worker = new ide.Worker({
 					'(' + (fn.param ? fn.param.join(', ') : '') + ')',
 				tags: [ 'complexity:' + fn.metrics.complexity ]
 			});
-		
+
 		if (def)
 			hints.push(def);
-		
+
 		return hints.length && hints;
 	}
-	
+
 });
 
 var plugin = new ide.Plugin({
@@ -65,9 +65,9 @@ var plugin = new ide.Plugin({
 	delay: 250,
 
 	data: null,
-	
+
 	editorCommands: {
-		
+
 		ijump: {
 			description: 'Jump to definition of identifier',
 			fn: function()
@@ -85,7 +85,7 @@ var plugin = new ide.Plugin({
 					return ide.Pass;
 			}
 		},
-		
+
 		jshint: {
 			fn: function() {
 				var e = ide.editor, file = e.file, version;
@@ -103,7 +103,7 @@ var plugin = new ide.Plugin({
 			},
 			description: 'Run jshint for current editor'
 		}
-		
+
 	},
 
 	fix: function()
@@ -115,12 +115,12 @@ var plugin = new ide.Plugin({
 		if (editor && editor.hints && token && file)
 		{
 			hints = editor.hints.getLine('jshint', token.line);
-			
+
 			hints.forEach(function(h) {
 				if (h.evidence && h.evidence.length>str.length)
 					str=h.evidence;
 			});
-			
+
 			ide.socket.send('jshint',
 				{ op: 'fix', js: str, p: ide.project.id, f: file.id });
 		}
@@ -134,7 +134,7 @@ var plugin = new ide.Plugin({
 		{
 			editor.header.setTag('jshint', '<span title="jshint: ' +
 				errors.length + ' errors(s) found.">jshint</span>', 'error');
-			
+
 			errors.forEach(function(e) {
 				if (e)
 					editor.hints.add('jshint', {
@@ -146,11 +146,20 @@ var plugin = new ide.Plugin({
 						evidence: e.evidence
 					});
 			});
-			
+
 		} else
-			editor.header.setTag('jshint', undefined, 'hidden');
-		
-		ide.assist.requestHints();
+			editor.header.setTag('jshint', '');
+	},
+
+	showHints: function(done, editor, token)
+	{
+		var hints = editor.hints.getLine('jshint', token.row).map(function(h) {
+			return { code: 'jshint', title: h.title,
+				className: h.className, priority: 5 };
+		});
+
+		if (hints.length)
+			done(hints);
 	},
 
 	onMessage: function(data)
@@ -160,23 +169,21 @@ var plugin = new ide.Plugin({
 	;
 		if (editor.hints)
 			this.updateHints(editor, data.errors);
-		
+
 		editor.__jshint = data;
 	},
 
 	onAssist: function(done, editor, token)
 	{
-		var hints, data;
+		var data;
 
 		if (editor && editor.hints && token)
 		{
 			data = editor.__jshint;
-			
-			hints = editor.hints.getLine('jshint', token.row).map(function(h) {
-				return { code: 'jshint', title: h.title,
-					className: h.className, priority: 5 };
-			});
-			
+
+			if (editor.file && !editor.file.diffChanged)
+				this.showHints(done, editor, token);
+
 			if (data)
 			{
 				worker.post('findFunction', {
@@ -184,16 +191,13 @@ var plugin = new ide.Plugin({
 					token: token.value
 				}, done);
 			}
-
-			if (hints.length)
-				done(hints);
 		}
 	},
-	
+
 	getHints: function(list, term, hints, icon)
 	{
 		var i=0, l=list.length, p, index;
-		
+
 		for (;i<l;i++)
 		{
 			p = list[i];
@@ -201,7 +205,7 @@ var plugin = new ide.Plugin({
 				hints.push(this.getHintDef(p, icon, index, term.length));
 		}
 	},
-	
+
 	getHintDef: function(title, icon, index, length)
 	{
 		return {
@@ -222,9 +226,9 @@ var plugin = new ide.Plugin({
 	;
 		if (!data || !str)
 			return;
-		
+
 		hints = [];
-		
+
 		if (token.type==='variable' && fn && fn.param)
 			this.getHints(fn.param, str, hints, 'variable');
 
@@ -243,6 +247,7 @@ var plugin = new ide.Plugin({
 
 	ready: function()
 	{
+		this.resources(worker);
 		this.listenTo('socket.message.jshint', this.onMessage)
 			.listenTo('assist', this.onAssist)
 			.listenTo('assist.inline', this.onAssistInline)

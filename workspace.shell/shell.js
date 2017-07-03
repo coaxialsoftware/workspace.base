@@ -2,6 +2,10 @@
 (function(ide, cxl) {
 "use strict";
 
+var
+	SHELL_ID = 1
+;
+
 /**
  * Calls shell service and returns a Promise.
  */
@@ -9,34 +13,67 @@ function shell(cmd, args)
 {
 	return cxl.ajax.post(
 		'/shell',
-		{ c: cmd, q: args, p: ide.project.get('path') }
+		{ c: cmd, q: Array.prototype.slice.call(args, 0), p: ide.project.get('path') }
 	);
 }
 
-/*function cmd(name, args, onprogress)
+function shellSuccess(cmd, args)
 {
-	args = Array.prototype.slice.call(args, 0);
-	shell(name, args, onprogress)
-		.then(function(response) {
-			var file = new ide.File({ filename: '', content: response });
+	return shell(cmd, args).then(function() {
+		ide.notify({ code: 'shell', title: cmd + ' success.' });
+	});
+}
 
-			ide.open({ file: file });
-		})
-	;
-}*/
+class Shell extends ide.Editor {
+
+	constructor(p)
+	{
+		super(p);
+
+		this.shellId = SHELL_ID++;
+	}
+
+}
 
 ide.plugins.register('shell', new ide.Plugin({
 
 	commands: {
 
+		shell: {
+			fn: function()
+			{
+				return new Shell({ plugin: this, title: 'shell' });
+			},
+			description: 'Opens shell'
+		},
+
 		mkdir: {
 			fn: function()
 			{
-				shell('mkdir', Array.prototype.slice.call(arguments, 0))
-					.then(ide.notify.bind(this, { code: 'shell', title: 'mkdir success.' }));
+				return shellSuccess('mkdir', arguments);
 			},
-			
 			description: 'Create directory'
+		},
+
+		mv: {
+			fn: function()
+			{
+				return shellSuccess('mv', arguments);
+			},
+			description: 'Move Files'
+		},
+
+		cp: {
+			fn: function()
+			{
+				return shellSuccess('cp', arguments);
+			},
+			description: 'Copy Files'
+		},
+		
+		ls: {
+			fn: function() { ide.open('.'); },
+			description: "list files in current directory"
 		}
 
 	}

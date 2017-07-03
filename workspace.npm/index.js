@@ -41,11 +41,11 @@ var
 ;
 
 class NPMLanguageServer extends workspace.LanguageServer {
-	
+
 	onInlineAssist(done, data)
 	{
 		var result;
-		
+
 		if (data.token.type==='string property')
 		{
 			result = this.findObject(NPM_OPTIONS, data.token.cursorValue, Object.assign);
@@ -54,16 +54,31 @@ class NPMLanguageServer extends workspace.LanguageServer {
 				done(result);
 		}
 	}
-	
+
 }
 
-plugin.config(function() {
-	
+plugin.extend({
+
+	sourcePath: __dirname + '/npm.js',
+
+	npmList: function(project)
+	{
+		return workspace.NPM.doNpm('list', null, project.path).catch(function(e) {
+			return e.data;
+		});
+	},
+
+	npmView: function(pkg, project)
+	{
+		return workspace.NPM.doNpm('view', pkg && [ [ pkg ] ], project.path );
+	}
+
+}).config(function() {
+
 	for (var i in NPM_OPTIONS)
 		NPM_OPTIONS[i].icon = 'npm';
 
 	workspace.plugins.on('project.create', function(project) {
-
 	var
 		pkg = workspace.common.load_json_sync(project.path + '/package.json'),
 		config = project.configuration,
@@ -76,9 +91,9 @@ plugin.config(function() {
 			config.version = config.version || pkg.version;
 			config.description = config.description || pkg.description;
 			config.license = config.license || pkg.license;
-			
+
 			links = [];
-			
+
 			if (pkg.homepage)
 				links.push({
 					href: pkg.homepage, class: 'home', title: 'Homepage' });
@@ -88,16 +103,25 @@ plugin.config(function() {
 			if (pkg.bugs)
 				links.push({
 					href: pkg.bugs.url || pkg.bugs, class: 'bug', title: 'Bug Tracker' });
-					
+
 			config.icons = config.icons ? config.icons.concat(links) : links;
 		}
 
 	});
-	
+
 	workspace.plugins.on('project.load', function(project) {
 		if (project.configuration.tags.npm)
 			project.ignore.push('node_modules');
 	});
-	
+
 	this.$ls = new NPMLanguageServer('npm', /application\/json/, /package\.json/);
+	this.server = workspace.server;
+
+}).route('GET', '/npm/list', function(req, res) {
+	var p = workspace.projectManager.getProject(req.query.p);
+
+	workspace.common.respond(this, res, this.npmList(p));
+}).route('GET', '/npm/view', function(req, res) {
+	var p = workspace.projectManager.getProject(req.query.p);
+	workspace.common.respond(this, res, this.npmView(req.query.package, p));
 });

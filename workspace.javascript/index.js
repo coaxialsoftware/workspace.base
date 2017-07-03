@@ -86,7 +86,7 @@ class JavascriptLanguageServer extends workspace.LanguageServer {
 
 	onKeyword(i)
 	{
-		i.icon = 'keyword';
+		i.icon = 'js';
 		return i;
 	}
 
@@ -95,7 +95,7 @@ class JavascriptLanguageServer extends workspace.LanguageServer {
 		if (m.title.charAt(0)==='!')
 			return;
 
-		m.icon = 'global';
+		m.icon = 'js';
 		return m;
 	}
 
@@ -105,7 +105,7 @@ class JavascriptLanguageServer extends workspace.LanguageServer {
 			return;
 
 		m.code = 'javascript';
-		m.icon = 'global';
+		m.icon = 'js';
 		m.description = def['!doc'];
 		return m;
 	}

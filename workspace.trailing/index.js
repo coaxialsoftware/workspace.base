@@ -2,9 +2,6 @@
 "use strict";
 
 var
-	fs = require('fs'),
-	_ = workspace._,
-	common = workspace.common,
 	plugin = module.exports = cxl('workspace.trailing')
 ;
 
@@ -19,9 +16,16 @@ plugin.extend({
 
 	onFileWrite: function(file)
 	{
+		var str, newStr;
+
 		if (file.content && this.mimeTypes.indexOf(file.mime)!==-1)
 		{
-			file.content = file.content.replace(this.REGEX, '');
+			// TODO use proper encoding
+			str = file.content.toString();
+			newStr = str.replace(this.REGEX, '');
+
+			if (newStr !== str)
+				file.content = Buffer.from(newStr);
 		}
 	}
 
