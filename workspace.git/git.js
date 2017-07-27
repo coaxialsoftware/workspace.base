@@ -14,6 +14,8 @@ ide.plugins.register('git', new ide.Plugin({
 
 				cxl.ajax.get('/git/status?p=' + ide.project.id).then(function(res) {
 					editor.add(res);
+				}, function(err) {
+					editor.add([{ className: 'error', title: err.error, icon: 'error' }]);
 				});
 
 				return editor;

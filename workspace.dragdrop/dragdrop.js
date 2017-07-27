@@ -39,7 +39,8 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 		this.$hint = ide.notify({
 			id: 'dragdrop',
 			code: 'dragdrop',
-			title: 'Dragging ' + items.length + ' items' + (dest ? ' to ' + dest : ''),
+			title: 'Dragging ' + items.length + ' items' + (dest ? ' to ' + dest : '') +
+				'. Hold ctrl to upload.',
 			progress: 0
 		});
 	},
@@ -54,8 +55,21 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 	upload: function(file, ev)
 	{
 		var newFile = new ide.File(this.$dest + file.name);
-		newFile.content = Array.from(ev.target.result);
-		newFile.write();
+
+		function upload()
+		{
+			ide.notify({ className: 'success', title: 'Successfully uploaded file' });
+			return newFile.write(ev.target.result);
+		}
+
+		return newFile.read().then(() => {
+			this.onEnd();
+
+			if (!newFile.stat.isNew)
+				return ide.confirm({ message: 'File exists. Overwrite?'}).then(upload);
+
+			return upload();
+		});
 	},
 
 	findEditor: function(el)
@@ -76,7 +90,7 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 		editor = this.findEditor(el),
 		dir = ''
 	;
-		if (editor && editor.file && editor.file.attributes.directory)
+		if (editor && editor.file && editor.file.stat.isDirectory)
 			dir = editor.file.filename + '/';
 
 		return dir;

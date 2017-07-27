@@ -11,7 +11,9 @@ plugin.extend({
 	REGEX: /[ \t]+$/gm,
 
 	mimeTypes: [
-		'application/javascript'
+		'application/javascript',
+		'text/javascript',
+		'application/json'
 	],
 
 	onFileWrite: function(file)
