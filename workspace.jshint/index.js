@@ -4,7 +4,6 @@ var
 	path = require('path'),
 	fs = require('fs'),
 
-	common = workspace.common,
 	plugin = module.exports = cxl('workspace.jshint')
 ;
 
@@ -15,12 +14,12 @@ plugin.extend({
 	findOptions: function(p, f)
 	{
 	var
-		dir = f ? path.dirname(f) : p,
+		dir = f ? path.dirname(f) : p.path,
 		file = dir + '/.jshintrc', data
 	;
 		if (!fs.existsSync(file) && f)
 		{
-			file = p + '/.jshintrc';
+			file = p.path + '/.jshintrc';
 			if (!fs.existsSync(file))
 				file = false;
 		}
@@ -39,16 +38,18 @@ plugin.extend({
 		}
 	},
 
-	doLint: function(client, options, data, js)
+	doLint: function(request,options)
 	{
+		var js = request.features.file.content;
+
 		jshint(js, options, options && options.globals);
 
 		var payload = jshint.data();
 
-		payload.$ = data.$;
-		payload.e = data.editor;
+		payload.$ = request.$;
+		payload.e = request.editor;
 
-		workspace.socket.respond(client, 'jshint', payload);
+		ide.socket.respond(request.client, 'jshint', payload);
 
 		return payload;
 	},
@@ -58,7 +59,7 @@ plugin.extend({
 	var
 		options = this.findOptions(data.p, data.f)
 	;
-		common.readFile(data.f)
+		ide.readFile(data.f)
 			.then(this.doLint.bind(this, client, options, data));
 	},
 
@@ -71,35 +72,21 @@ plugin.extend({
 			this.operation(`Linting file ${data.f}`, this.lintFile.bind(this, client,data));
 	},
 
-	onAssist: function(done, data)
+	onAssist: function(request)
 	{
-		var hints, payload, options, row;
+		var options, file = request.features.file;
 
-		if (!(data.fileChanged &&
-			(data.mime ==='application/json' || data.mime==='application/javascript')))
+		if (!(file && file.diffChanged &&
+			(file.mime ==='application/json' || file.mime==='application/javascript')))
 			return;
 
-		options = this.findOptions(data.project, data.file);
-		payload = this.doLint(data.client, options, data, data.content);
-
-		if (payload.errors && data.token)
-		{
-			row = data.token.row+1;
-
-			hints = payload.errors.filter(function(e) {
-				return e && e.line === row;
-			}).map(function(e) {
-				return { code: 'jshint', title: e.reason,
-					className: e.id==='(error)' ? 'error' : 'warn', priority: 5 };
-			});
-
-			done(hints);
-		}
+		options = this.findOptions(request.project, file.path);
+		this.doLint(request, options);
 	}
 
 }).run(function() {
 
-	workspace.plugins.on('assist', this.onAssist.bind(this));
-	workspace.plugins.on('socket.message.jshint', this.onMessage.bind(this));
+	ide.plugins.on('assist', this.onAssist.bind(this));
+	ide.plugins.on('socket.message.jshint', this.onMessage.bind(this));
 
 });

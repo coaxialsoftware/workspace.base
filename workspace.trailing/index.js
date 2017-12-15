@@ -32,5 +32,5 @@ plugin.extend({
 	}
 
 }).run(function() {
-	workspace.plugins.on('file.beforewrite', this.onFileWrite.bind(this));
+	ide.plugins.on('file.beforewrite', this.onFileWrite.bind(this));
 });

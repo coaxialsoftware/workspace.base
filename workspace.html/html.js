@@ -1,0 +1,4 @@
+
+ide.plugins.register('html', {
+
+});

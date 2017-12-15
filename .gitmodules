@@ -4,3 +4,6 @@
 [submodule "autocomplete-css"]
 	path = autocomplete-css
 	url = https://github.com/atom/autocomplete-css
+[submodule "autocomplete-html"]
+	path = autocomplete-html
+	url = https://github.com/atom/autocomplete-html.git

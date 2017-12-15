@@ -4,10 +4,6 @@
  * Drag and Drop functionality
  *
  */
-
-(function(ide, window) {
-"use strict";
-
 ide.plugins.register('dragdrop', new ide.Plugin({
 
 	$dest: null,
@@ -16,10 +12,7 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 	{
 		ev.preventDefault();
 		ev.dataTransfer.dropEffect = 'copy';
-	},
 
-	on_dragenter: function(ev)
-	{
 		var dest = '';
 
 		if (ev.ctrlKey)
@@ -39,7 +32,7 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 		this.$hint = ide.notify({
 			id: 'dragdrop',
 			code: 'dragdrop',
-			title: 'Dragging ' + items.length + ' items' + (dest ? ' to ' + dest : '') +
+			title: 'Dragging ' + items.length + ' items' + (dest ? ' to "' + dest + '"' : '') +
 				'. Hold ctrl to upload.',
 			progress: 0
 		});
@@ -50,6 +43,8 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 		var newFile = new ide.File(file.name);
 		newFile.content = ev.target.result;
 		ide.open({ file: newFile });
+
+		this.onEnd();
 	},
 
 	upload: function(file, ev)
@@ -58,12 +53,17 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 
 		function upload()
 		{
-			ide.notify({ className: 'success', title: 'Successfully uploaded file' });
+			ide.notify({
+				className: 'success',
+				title: `Successfully uploaded file to ${newFile.name}`
+			});
+
 			return newFile.write(ev.target.result);
 		}
 
+		this.onEnd();
+
 		return newFile.read().then(() => {
-			this.onEnd();
 
 			if (!newFile.stat.isNew)
 				return ide.confirm({ message: 'File exists. Overwrite?'}).then(upload);
@@ -91,7 +91,7 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 		dir = ''
 	;
 		if (editor && editor.file && editor.file.stat.isDirectory)
-			dir = editor.file.filename + '/';
+			dir = editor.file.name + '/';
 
 		return dir;
 	},
@@ -114,7 +114,7 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 
 	onEnd: function()
 	{
-		if (!this.$entered && this.$hint)
+		if (this.$hint)
 		{
 			ide.logger.remove(this.$hint);
 			this.$hint = this.$dest = null;
@@ -126,12 +126,8 @@ ide.plugins.register('dragdrop', new ide.Plugin({
 	start: function()
 	{
 		this.listenToElement(window, 'dragover', this.on_dragover.bind(this));
-		this.listenToElement(window, 'dragenter', this.on_dragenter.bind(this));
 		this.listenToElement(window, 'drop', this.on_drop.bind(this));
 		this.listenToElement(window, 'dragleave', this.onEnd.bind(this));
-		//this.listenToElement(window, 'dragleave', this.onEnd.bind(this));
 	}
 
 }));
-
-})(this.ide, this);

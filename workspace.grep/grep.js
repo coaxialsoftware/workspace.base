@@ -1,9 +1,7 @@
 (function(ide, cxl) {
 "use strict";
 
-var
-	GREP_REGEX = /^(?:\.\/)?(.+):(\d+):\s*(.+)\s*/
-;
+const GREP_REGEX = /^(?:\.\/)?(.+):(\d+):\s*(.+)\s*/;
 
 function grepDone(editor, result)
 {
@@ -57,12 +55,17 @@ ide.plugins.register('grep', {
 			// Fix for linux?
 			args.push(term, env && env.WINDIR ? '*' : '.');
 
-			cxl.ajax.post('/grep', { q: args, p: ide.project.id }, function(a)
-			{
-				var eol = a.target.responseText.lastIndexOf("\n") || a.loaded;
+			cxl.ajax({
+				url: '/grep',
+				method: 'POST',
+				data: { q: args, p: ide.project.id },
+				progress: function(a)
+				{
+					var eol = a.target.responseText.lastIndexOf("\n") || a.loaded;
 
-				grepDone(editor, a.target.responseText.slice(pos, eol));
-				pos = eol+1;
+					grepDone(editor, a.target.responseText.slice(pos, eol));
+					pos = eol+1;
+				}
 			}).then(function(text) {
 				grepDone(editor, text.slice(pos));
 

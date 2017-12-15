@@ -14,6 +14,7 @@
 	"esnext": true,
 	"globals": {
 		"cxl": false,
+		"ide": false,
 		"workspace": false
 	}
 }

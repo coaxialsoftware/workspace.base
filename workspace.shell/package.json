@@ -1,5 +1,9 @@
 {
 	"name": "@cxl/workspace.shell",
 	"version": "0.0.1",
-	"description": "Adds shell command."
+	"description": "Adds shell command.",
+
+	"dependencies": {
+		"xterm": "2"
+	}
 }

@@ -2,15 +2,11 @@
 var
 	plugin = module.exports = cxl('workspace.css'),
 	// TODO
-	DEFS = require('./completions.json')
+	DEFS = require('./completions.json'),
+	MIME_REGEX = /text\/(?:css|less|sass|x-scss)/
 ;
 
-class CSSLanguageServer extends workspace.LanguageServer {
-
-	constructor()
-	{
-		super('css', /text\/(?:css|less|sass|x-scss)/);
-	}
+class CSSAssistServer extends ide.AssistServer {
 
 	tag(match)
 	{
@@ -32,12 +28,23 @@ class CSSLanguageServer extends workspace.LanguageServer {
 		return match;
 	}
 
-	onAssist(done, data)
+	value(match)
 	{
-		var token = data.token, match;
+		match.icon = 'value';
+		match.code = 'css';
+		return match;
+	}
 
-		if (!token)
-			return;
+	canAssist(request)
+	{
+		var file = request.features.file;
+
+		return file && MIME_REGEX.test(file.mime);
+	}
+
+	extendedAssist(req, respond)
+	{
+		var token = req.features.token, match;
 
 		switch (token.type) {
 		case 'property error':
@@ -45,7 +52,7 @@ class CSSLanguageServer extends workspace.LanguageServer {
 			match = DEFS.properties[token.value];
 
 			if (match)
-				done([ {
+				respond([ {
 					title: token.value, icon: 'property', code: 'css',
 					description: match.description }
 				]);
@@ -53,27 +60,41 @@ class CSSLanguageServer extends workspace.LanguageServer {
 		}
 	}
 
-	onInlineAssist(done, data)
+	inlineAssist(req, respond)
 	{
-		var token = data.token;
+		var token = req.features.token, prop, assist=ide.assist;
 
 		switch (token.type) {
 		case 'tag':
 			// LESS files send tag type for properties
-			if (data.mime!=='text/css')
-				done(this.findObject(DEFS.properties, token.cursorValue, this.property));
+			if (req.features.file.mime!=='text/css')
+				respond(assist.findObject(DEFS.properties, token.cursorValue, this.property));
 
-			return done(this.findArray(DEFS.tags, token.cursorValue, this.tag));
+			return respond(assist.findArray(DEFS.tags, token.cursorValue, this.tag));
 		case 'property error':
 		case 'property':
-			return done(this.findObject(DEFS.properties, token.cursorValue, this.property));
-		// TODO pseudo-selector token type.
+			return respond(assist.findObject(DEFS.properties, token.cursorValue, this.property));
+		case null: case 'variable':
+			prop = req.plugins.css && req.plugins.css.property &&
+				DEFS.properties[req.plugins.css.property];
+
+			// TODO optimize
+			if (prop)
+				respond(assist.findArray(prop.values, token.cursorValue, this.value));
+
+			prop = req.plugins.css && req.plugins.css.tag;
+
+			if (prop && token.cursorValue.charAt(0)===':')
+				respond(assist.findObject(DEFS.pseudoSelectors, token.cursorValue,
+					this.propertyLong));
 		}
 	}
 
 }
 
 plugin.extend({
+
+	sourcePath: __dirname + '/css.js',
 
 	destroy: function()
 	{
@@ -82,6 +103,6 @@ plugin.extend({
 
 }).run(function() {
 
-	this.ls = new CSSLanguageServer();
+	this.ls = new CSSAssistServer();
 
 });

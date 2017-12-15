@@ -1,6 +1,5 @@
 
 (function(ide) {
-"use strict";
 
 function findFunctionAtCursor(line, ch, functions)
 {
@@ -84,46 +83,8 @@ var plugin = new ide.Plugin({
 				else
 					return ide.Pass;
 			}
-		},
-
-		jshint: {
-			fn: function() {
-				var e = ide.editor, file = e.file, version;
-
-				if (file && (e.mode==='text/javascript' ||
-					e.mode==='application/json') && e.hints)
-				{
-					version = Date.now();
-
-					ide.socket.send('jshint', {
-						editor: e.id, p: ide.project.id, op: 'lint',
-						f: file.id, $: version, js: file.diff()
-					});
-				}
-			},
-			description: 'Run jshint for current editor'
 		}
 
-	},
-
-	fix: function()
-	{
-	var
-		editor = ide.editor, token = editor.token,
-		hints, str='', file=editor.file
-	;
-		if (editor && editor.hints && token && file)
-		{
-			hints = editor.hints.getLine('jshint', token.line);
-
-			hints.forEach(function(h) {
-				if (h.evidence && h.evidence.length>str.length)
-					str=h.evidence;
-			});
-
-			ide.socket.send('jshint',
-				{ op: 'fix', js: str, p: ide.project.id, f: file.id });
-		}
 	},
 
 	updateHints: function(editor, errors)
@@ -133,33 +94,20 @@ var plugin = new ide.Plugin({
 		if (errors)
 		{
 			editor.header.setTag('jshint', '<span title="jshint: ' +
-				errors.length + ' errors(s) found.">jshint</span>', 'error');
+				errors.length + ' error(s) found.">jshint:' + errors.length + '</span>', 'error');
 
 			errors.forEach(function(e) {
 				if (e)
-					editor.hints.add('jshint', {
-						line: e.line,
-						ch: e.character,
+					editor.hints.add({
+						code: 'jshint',
+						range: { column: e.character, row: e.line-1 },
 						className: e.id==='(error)' ? 'error' : 'warn',
-						length: e.evidence && e.evidence.length,
-						title: e.reason,
-						evidence: e.evidence
+						title: e.reason
 					});
 			});
 
 		} else
 			editor.header.setTag('jshint', '');
-	},
-
-	showHints: function(done, editor, token)
-	{
-		var hints = editor.hints.getLine('jshint', token.row).map(function(h) {
-			return { code: 'jshint', title: h.title,
-				className: h.className, priority: 5 };
-		});
-
-		if (hints.length)
-			done(hints);
 	},
 
 	onMessage: function(data)
@@ -173,24 +121,25 @@ var plugin = new ide.Plugin({
 		editor.__jshint = data;
 	},
 
-	onAssist: function(done, editor, token)
+	onAssist: function(request)
 	{
-		var data;
+		var data, editor=request.editor, token=request.features.token;
 
-		if (editor && editor.hints && token)
+		if (editor && token)
 		{
 			data = editor.__jshint;
 
-			if (editor.file && !editor.file.diffChanged)
-				this.showHints(done, editor, token);
-
 			if (data)
 			{
-				worker.post('findFunction', {
-					row: token.row+1, column: token.column, functions: data.functions,
-					token: token.value
-				}, done);
+				if (request.extended)
+					worker.post('findFunction', {
+						row: token.row+1, column: token.column, functions: data.functions,
+						token: token.value
+					}, request.respondExtended.bind(request));
+
+				this.onAssistInline(request, data);
 			}
+
 		}
 	},
 
@@ -209,22 +158,23 @@ var plugin = new ide.Plugin({
 	getHintDef: function(title, icon, index, length)
 	{
 		return {
+			code: 'jshint',
 			title: title, icon: icon, priority: index+5,
 			matchStart: index, matchEnd: index+length
 		};
 	},
 
-	onAssistInline: function(done, editor, token)
+	onAssistInline: function(request, data)
 	{
 	var
-		data = editor.__jshint,
-		fn = token && data && findFunctionAtCursor(token.row+1, token.column, data.functions),
+		token = request.editor.token.current,
+		fn = token && findFunctionAtCursor(token.row+1, token.column, data.functions),
 		str = token.cursorValue,
 		hints,
-		globals = data && data.globals,
+		globals = data.globals,
 		p, index
 	;
-		if (!data || !str)
+		if (!str)
 			return;
 
 		hints = [];
@@ -242,7 +192,7 @@ var plugin = new ide.Plugin({
 		}
 
 		if (hints.length)
-			done(hints);
+			request.respondInline(hints);
 	},
 
 	ready: function()

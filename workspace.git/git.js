@@ -1,10 +1,10 @@
 
-(function(ide) {
-"use strict";
+ide.plugins.register('git', {
 
-ide.plugins.register('git', new ide.Plugin({
+	icon: 'git',
 
 	commands: {
+
 		'git.status': {
 			fn: function()
 			{
@@ -15,20 +15,22 @@ ide.plugins.register('git', new ide.Plugin({
 				cxl.ajax.get('/git/status?p=' + ide.project.id).then(function(res) {
 					editor.add(res);
 				}, function(err) {
-					editor.add([{ className: 'error', title: err.error, icon: 'error' }]);
+					editor.add([
+						{ className: 'error', action: null, title: err.error, icon: 'error' }
+					]);
 				});
 
 				return editor;
 			},
-			description: 'Show the working tree status',
-			icon: 'git'
+			description: 'Show the working tree status'
 		},
+
 		'git.log': {
 			fn: function(file)
 			{
 				var editor;
 
-				file = file || ide.editor && ide.editor.file && ide.editor.file.filename;
+				file = file || ide.editor && ide.editor.file && ide.editor.file.name;
 
 				if (!file)
 					return new ide.Notification({
@@ -57,36 +59,30 @@ ide.plugins.register('git', new ide.Plugin({
 
 				return editor;
 			},
-			description: 'Show history for path',
-			icon: 'git'
+			description: 'Show history for path'
 		},
 		'git.pull': {
 			fn: function()
 			{
-				cxl.ajax.get('/git/pull', { p: ide.project.id }, function(res) {
-					ide.open(new ide.File({ content: res, new: false }));
+				return cxl.ajax.get('/git/pull', { p: ide.project.id }).then(function(res) {
+					ide.open(new ide.File(null, res));
 				});
 			},
-			description: 'Fetch from and integrate with another repository',
-			icon: 'git'
+			description: 'Fetch from and integrate with another repository'
 		},
 		'git.diff': {
 			fn: function(file)
 			{
-				cxl.ajax.post('/git/diff', { project: ide.project.id, file: file })
-					.then(function(res) {
-						ide.open(new ide.File({
-							content: res.content, mime: 'text/x-diff'
-						}));
-					});
+				return cxl.ajax.post('/git/diff', { project: ide.project.id, file: file })
+					.then(res => ide.open(new ide.File(null, res.content, 'text/x-diff')))
+					.then(editor => { editor.command = 'git.diff'; });
 			},
-			description: 'Show changes between commits, commit and working tree, etc',
-			icon: 'git'
+			description: 'Show changes between commits, commit and working tree, etc'
 		},
 		'git.show': {
 			fn: function(file, rev)
 			{
-				file = file || ide.editor && ide.editor.file && ide.editor.file.filename;
+				file = file || ide.editor && ide.editor.file && ide.editor.file.name;
 
 				if (!file)
 					return new ide.Notification({
@@ -94,20 +90,15 @@ ide.plugins.register('git', new ide.Plugin({
 						className: 'error'
 					});
 
-				cxl.ajax.get('/git/show?f=' + file + '&h=' + rev + '&p=' + ide.project.id)
-					.then(function(res) {
-						return ide.open({ file: new ide.File(res) });
-					}).then(function(editor) {
+				return cxl.ajax.get('/git/show?f=' + file + '&h=' + rev + '&p=' + ide.project.id)
+					.then(res => ide.open(new ide.File(null, res.content, res.mime)))
+					.then(editor => {
 						editor.command = 'git.show';
 						editor.arguments = [ file, rev ];
 					});
 			},
-			description: 'Show various types of objects',
-			icon: 'git'
+			description: 'Show various types of objects'
 		}
 	}
 
-}));
-
-
-})(this.ide);
+});

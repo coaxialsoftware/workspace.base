@@ -7,9 +7,7 @@
 
 var
 	fs = require('fs'),
-	_ = workspace._,
 
-	common = workspace.common,
 	plugin = module.exports = cxl('workspace.git'),
 
 	STATUS_CODE = {
@@ -34,13 +32,12 @@ plugin.extend({
 
 	readIgnore: function(project)
 	{
-		return common.read(project.path + '/.gitignore')
+		return cxl.file.read(project.path + '/.gitignore', 'utf8')
 			.then(function(data) {
 				var f = data.trim().replace(/[\/\\]$/mg, '').split("\n");
-				var ignore = project.configuration.ignore || [];
+				var ignore = project.configuration.ignore;
 
-				project.configuration.ignore =
-					_.compact(ignore.concat(f));
+				cxl.pushUnique(ignore, f);
 			}, function() { });
 	},
 
@@ -58,16 +55,17 @@ plugin.extend({
 			project.reload();
 	},
 
-	server: workspace.server
+	server: cxl('workspace').server
 
 }).route('GET', '/git/log', function(req, res) {
 var
 	file = req.query.f,
 	project = req.query.p,
 	cmd = `cd ${project} && git log --pretty=format:%H%n%an%n%ai%n%f ${file}`,
-	REGEX = /(.+)\n(.+)\n(.+)\n(.+)/gm,
 	m, result = []
 ;
+	const REGEX = /(.+)\n(.+)\n(.+)\n(.+)/gm;
+
 	function parse(res)
 	{
 		while ((m = REGEX.exec(res))) {
@@ -78,7 +76,9 @@ var
 		return result;
 	}
 
-	common.respond(this, res, workspace.exec(cmd).then(parse));
+	ide.ServerResponse.respond(res, ide.exec(cmd, {
+		plugin: this, maxBuffer: 1028000 }).then(parse), this);
+
 }).route('GET', '/git/show', function(req, res) {
 var
 	file = req.query.f,
@@ -86,16 +86,17 @@ var
 	rev = req.query.h,
 	cmd = `cd ${project} && git show ${rev}:${file}`
 ;
-	common.respond(
-		this, res,
-		workspace.exec(cmd, { plugin: this }).then(function(content) {
-			return { content: content, mime: workspace.File.getMime(file) };
-		})
+	ide.ServerResponse.respond(
+		res,
+		ide.exec(cmd, { plugin: this }).then(function(content) {
+			return { content: content, mime: ide.File.mime(file) };
+		}),
+		this
 	);
 
 }).route('GET', '/git/status', function(req, res) {
 var
-	project = workspace.projectManager.getProject(req.query.p),
+	project = ide.projectManager.getProject(req.query.p),
 	cmd = `git status --porcelain -uno --verbose`,
 	REGEX = /(.)(.) (.+)/gm,
 	m, result = [], tag
@@ -112,34 +113,34 @@ var
 		return result;
 	}
 
-	common.respond(this, res, project.exec(cmd, { plugin: this })
-		.then(parse));
+	ide.ServerResponse.respond(res, project.exec(cmd, { plugin: this })
+		.then(parse), this);
 
 }).route('GET', '/git/pull', function(req, res) {
 var
-	project = workspace.projectManager.getProject(req.query.p),
+	project = ide.projectManager.getProject(req.query.p),
 	cmd = 'git pull'
 ;
-	common.respond(this, res, project.exec(cmd, { plugin: this }));
+	ide.ServerResponse.respond(res, project.exec(cmd, { plugin: this }), this);
 }).route('POST', '/git/clone', function(req, res) {
 var
-	project = workspace.projectManager.getProject(req.body.project),
+	project = ide.projectManager.getProject(req.body.project),
 	repo = req.body.repository,
 	cmd = `git clone ${repo}`
 ;
-	common.respond(this, res, project.exec(cmd, { plugin: this }));
+	ide.ServerResponse.respond(res, project.exec(cmd, { plugin: this }), this);
 }).route('POST', '/git/diff', function(req, res) {
 var
-	project = workspace.projectManager.getProject(req.body.project),
+	project = ide.projectManager.getProject(req.body.project),
 	file = req.body.file || '',
 	cmd = `git diff ${file}`
 ;
-	common.respond(this, res, project.exec(cmd, { plugin: this }).then(function(content) {
+	ide.ServerResponse.respond(res, project.exec(cmd, { plugin: this }, this).then(function(content) {
 		return { content: content };
 	}));
 
 }).config(function() {
-	workspace.plugins.on('project.create', this.onProjectCreate.bind(this));
-	workspace.plugins.on('project.load', this.onProjectLoad.bind(this));
-	workspace.plugins.on('project.filechange:.gitignore', this.reloadProject.bind(this));
+	ide.plugins.on('project.create', this.onProjectCreate.bind(this));
+	ide.plugins.on('project.load', this.onProjectLoad.bind(this));
+	ide.plugins.on('project.filechange:.gitignore', this.reloadProject.bind(this));
 });

@@ -6,7 +6,10 @@
 "use strict";
 
 var
+	fs = require('fs'),
+
 	plugin = module.exports = cxl('workspace.npm'),
+	ServerResponse = ide.ServerResponse,
 	NPM_OPTIONS = {
 		'"name"': { description: 'Package Name' },
 		'"version"': { description: 'Package Version' },
@@ -40,18 +43,18 @@ var
 	}
 ;
 
-class NPMLanguageServer extends workspace.LanguageServer {
+class NPMLanguageServer extends ide.LanguageServer {
 
-	onInlineAssist(done, data)
+	onInlineAssist(request)
 	{
-		var result;
+		var result, token = request.features.token;
 
-		if (data.token.type==='string property')
+		if (token.type==='string property')
 		{
-			result = this.findObject(NPM_OPTIONS, data.token.cursorValue, Object.assign);
+			result = ide.assist.findObject(NPM_OPTIONS, token.cursorValue, Object.assign);
 
 			if (result.length)
-				done(result);
+				request.respondInline(result);
 		}
 	}
 
@@ -63,14 +66,19 @@ plugin.extend({
 
 	npmList: function(project)
 	{
-		return workspace.NPM.doNpm('list', null, project.path).catch(function(e) {
+		return ide.NPM.doNpm('list', null, project.path).catch(function(e) {
 			return e.data;
 		});
 	},
 
 	npmView: function(pkg, project)
 	{
-		return workspace.NPM.doNpm('view', pkg && [ [ pkg ] ], project.path );
+		return ide.NPM.doNpm('view', pkg && [ [ pkg ] ], project.path );
+	},
+
+	npmInstall: function(pkg, project)
+	{
+		return ide.NPM.doNpm('install', pkg && [ [ pkg ]], project);
 	}
 
 }).config(function() {
@@ -78,12 +86,16 @@ plugin.extend({
 	for (var i in NPM_OPTIONS)
 		NPM_OPTIONS[i].icon = 'npm';
 
-	workspace.plugins.on('project.create', function(project) {
+	ide.plugins.on('project.create', function(project) {
 	var
-		pkg = workspace.common.load_json_sync(project.path + '/package.json'),
 		config = project.configuration,
-		links
+		links, pkg
 	;
+		try {
+			// TODO make async
+			pkg = JSON.parse(fs.readFileSync(project.path + '/package.json'));
+		} catch(e) { return; }
+
 		if (pkg)
 		{
 			config.tags.npm = 'npm';
@@ -109,19 +121,22 @@ plugin.extend({
 
 	});
 
-	workspace.plugins.on('project.load', function(project) {
+	ide.plugins.on('project.load', function(project) {
 		if (project.configuration.tags.npm)
 			project.ignore.push('node_modules');
 	});
 
 	this.$ls = new NPMLanguageServer('npm', /application\/json/, /package\.json/);
-	this.server = workspace.server;
+	this.server = cxl('workspace').server;
 
 }).route('GET', '/npm/list', function(req, res) {
-	var p = workspace.projectManager.getProject(req.query.p);
+	var p = ide.projectManager.getProject(req.query.p);
 
-	workspace.common.respond(this, res, this.npmList(p));
+	ServerResponse.respond(res, this.npmList(p), this);
 }).route('GET', '/npm/view', function(req, res) {
-	var p = workspace.projectManager.getProject(req.query.p);
-	workspace.common.respond(this, res, this.npmView(req.query.package, p));
+	var p = ide.projectManager.getProject(req.query.p);
+
+	ServerResponse.respond(res, this.npmView(req.query.package, p), this);
+}).route('POST', '/npm/install', function(req, res) {
+	ServerResponse.respond(res, this.npmInstall(req.body.package, req.body.project), this);
 });

@@ -1,6 +1,7 @@
 
 var
-	plugin = module.exports = cxl('workspace.javascript')
+	plugin = module.exports = cxl('workspace.javascript'),
+	assist = ide.assist
 ;
 
 plugin.Keywords = [
@@ -77,11 +78,12 @@ plugin.Keywords = [
 plugin.BrowserDefinitions = require('./browser.json');
 plugin.ECMADefinitions = require('./ecmascript.json');
 
-class JavascriptLanguageServer extends workspace.LanguageServer {
+class JavascriptLanguageServer extends ide.AssistServer {
 
 	constructor()
 	{
-		super('javascript', /application\/javascript/);
+		super();
+		this.canAssist = ide.AssistServer.CanAssistMime(/application\/javascript/);
 	}
 
 	onKeyword(i)
@@ -110,30 +112,30 @@ class JavascriptLanguageServer extends workspace.LanguageServer {
 		return m;
 	}
 
-	onInlineAssist(done, data)
+	inlineAssist(request, done)
 	{
-		var token=data.token;
+		var token = request.features.token;
 
 		if (token.type==='variable')
 		{
-			done(this.findObject(plugin.BrowserDefinitions, token.cursorValue,
+			done(assist.findObject(plugin.BrowserDefinitions, token.cursorValue,
 				this.onBrowserInline));
-			done(this.findObject(plugin.ECMADefinitions, token.cursorValue,
+			done(assist.findObject(plugin.ECMADefinitions, token.cursorValue,
 				this.onBrowserInline));
 		}
 
 		if (token.type==='variable' || token.type==='keyword')
-			done(this.findArray(plugin.Keywords, token.cursorValue, this.onKeyword));
+			done(assist.findArray(plugin.Keywords, token.cursorValue, this.onKeyword));
 	}
 
-	onAssist(done, data)
+	extendedAssist(request, done)
 	{
-		var token = data.token;
+		var token = request.features.token;
 
 		if (token && token.type==='variable')
 		{
-			done(this.findObject(plugin.BrowserDefinitions, token.value, this.onBrowser));
-			done(this.findObject(plugin.ECMADefinitions, token.value, this.onBrowser));
+			done(assist.findObject(plugin.BrowserDefinitions, token.value, this.onBrowser));
+			done(assist.findObject(plugin.ECMADefinitions, token.value, this.onBrowser));
 		}
 	}
 

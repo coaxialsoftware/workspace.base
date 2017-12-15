@@ -1,8 +1,6 @@
 /**
  * workspace.Shell
  */
-"use strict";
-
 var
 	plugin = module.exports = cxl('workspace.grep')
 ;
@@ -14,5 +12,8 @@ plugin.extend({
 	this.server = workspace.server;
 
 }).route('POST', '/grep', function(req, res) {
-	workspace.shell('grep', req.body.q, req.body.p, res);
+
+	var grep = new ide.Process('grep', req.body.q, { cwd: req.body.p });
+
+	new ide.http.StreamResponse(res, grep.stream);
 });

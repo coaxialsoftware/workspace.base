@@ -1,27 +1,39 @@
 
-(function(ide, cxl) {
-
 ide.plugins.register('npm', new ide.Plugin({
+
+	icon: 'npm',
 
 	commands: {
 
 		'npm.view': {
 			fn: function(package)
 			{
-			var
-				file = new ide.File({ filename: package, mime: 'application/json' }),
-				editor = new ide.SourceEditor({
-					file: file
-				})
-			;
-				cxl.ajax.get('/npm/view?p='+ ide.project.id +
+				return cxl.ajax.get('/npm/view?p='+ ide.project.id +
 					'&package=' + encodeURI(package||'')).then(function(content) {
-					editor.setValue(JSON.stringify(content, null, 4));
-				});
 
-				return editor;
+					return ide.open(
+						new ide.File(null, JSON.stringify(content, null, 2), 'application/json')
+					);
+				});
+			}
+		},
+
+		'npm.install': {
+			fn: function(package) {
+
+				var n = ide.notify({ progress: 0, title: `npm install ${package||''}` });
+
+				function done()
+				{
+					n.progress = 1;
+					ide.notify(n);
+				}
+
+				return cxl.ajax.post('/npm/install', {
+					project: ide.project.id, package: package
+				}).then(done, done);
 			},
-			icon: 'npm'
+			description: 'Install npm package'
 		},
 
 		'npm.list': {
@@ -57,8 +69,7 @@ ide.plugins.register('npm', new ide.Plugin({
 				});
 
 				return editor;
-			},
-			icon: 'npm'
+			}
 		}
 	},
 
@@ -69,4 +80,3 @@ ide.plugins.register('npm', new ide.Plugin({
 
 }));
 
-})(this.ide, this.cxl);
