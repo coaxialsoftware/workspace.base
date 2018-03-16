@@ -53,7 +53,6 @@ class Shell extends ide.Terminal {
 			return;
 
 		this.$connecting = true;
-		this.$term.fit();
 		// Make sure pid is numeric
 		this.pid = +pid;
 

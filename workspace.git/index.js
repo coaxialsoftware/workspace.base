@@ -135,9 +135,10 @@ var
 	file = req.body.file || '',
 	cmd = `git diff ${file}`
 ;
-	ide.ServerResponse.respond(res, project.exec(cmd, { plugin: this }, this).then(function(content) {
-		return { content: content };
-	}));
+	ide.ServerResponse.respond(
+		res,
+		project.exec(cmd, { plugin: this }, this).then(content => ({ content: content }))
+	);
 
 }).config(function() {
 	ide.plugins.on('project.create', this.onProjectCreate.bind(this));
