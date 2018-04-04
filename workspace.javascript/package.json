@@ -1,6 +1,6 @@
 {
 	"name": "@cxl/workspace.javascript",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"scripts": {
 		"prepublishOnly":
 		"cp ../tern/defs/browser.json browser.json; cp ../tern/defs/ecmascript.json ecmascript.json"
