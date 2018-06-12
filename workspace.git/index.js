@@ -30,15 +30,22 @@ plugin.extend({
 		}
 	},
 
+	parseIgnore(project, data)
+	{
+	const
+		f = data.trim().replace(/(?:[\/\\]$)|^#.*$/mg, '').split("\n"),
+		ignore = project.configuration.ignore
+	;
+		f.forEach(function(i) {
+			if (i && ignore.indexOf(i)===-1)
+				ignore.push(i);
+		});
+	},
+
 	readIgnore: function(project)
 	{
 		return cxl.file.read(project.path + '/.gitignore', 'utf8')
-			.then(function(data) {
-				var f = data.trim().replace(/[\/\\]$/mg, '').split("\n");
-				var ignore = project.configuration.ignore;
-
-				cxl.pushUnique(ignore, f);
-			}, function() { });
+			.then(this.parseIgnore.bind(this, project), function() { });
 	},
 
 	onProjectLoad: function(project)
