@@ -16,11 +16,11 @@ plugin.extend({
 		'application/json'
 	],
 
-	onFileWrite: function(file)
+	onFileWrite(file)
 	{
 		var str, newStr;
 
-		if (file.content && this.mimeTypes.indexOf(file.mime)!==-1)
+		if (file.content && this.mimeTypes.includes(file.mime))
 		{
 			// TODO use proper encoding
 			str = file.content.toString();

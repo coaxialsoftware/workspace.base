@@ -26,8 +26,6 @@ plugin.extend({
 
 		if (file)
 		{
-			this.dbg(`Using ${file} as config.`);
-
 			try { data = JSON.parse(fs.readFileSync(file, 'utf8')); }
 			catch(e) {
 				this.dbg('Coult not read jshintrc file.');

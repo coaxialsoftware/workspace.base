@@ -33,7 +33,8 @@ plugin.extend({
 	parseIgnore(project, data)
 	{
 	const
-		f = data.trim().replace(/(?:[\/\\]$)|^#.*$/mg, '').split("\n"),
+		// remove comments, "!" modifier not supported
+		f = data.trim().replace(/(?:[\/\\]$)|^[#!].*$/mg, '').split("\n"),
 		ignore = project.configuration.ignore
 	;
 		f.forEach(function(i) {

@@ -1,5 +1,5 @@
 
-var
+const
 	plugin = module.exports = cxl('workspace.shell'),
 	WHITELIST = {
 		mkdir: true,
@@ -10,6 +10,9 @@ var
 	processList = {}
 ;
 
+var pty;
+try { pty = require('node-pty-prebuilt'); } catch (e) {}
+
 function getOSShell()
 {
 	var env = process.env;
@@ -17,7 +20,43 @@ function getOSShell()
 	if (process.platform==='win32')
 		return env.COMSPEC || 'cmd.exe';
 
-	return env.SHELL || '/bin/sh';
+	return env.SHELL || '/bin/bash';
+}
+
+class TerminalStream extends ide.ProcessStream {
+
+	$initializeBindings(proc)
+	{
+		this.$process = proc;
+		proc.on('data', this.$onData.bind(this));
+		proc.on('exit', this.$onProcessClose.bind(this));
+		proc.on('error', this.$onProcessError.bind(this));
+	}
+
+	write(data)
+	{
+		this.$process.write(data);
+	}
+
+}
+
+class TerminalProcess extends ide.Process {
+
+	$spawn(cmd, params, options)
+	{
+		return pty.spawn(cmd, params, options);
+	}
+
+	$createStream(process)
+	{
+		return new TerminalStream(process);
+	}
+
+	resize(cols, rows)
+	{
+		this.$process.resize(cols, rows);
+	}
+
 }
 
 class SocketProcess {
@@ -63,16 +102,19 @@ class SocketProcess {
 
 }
 
-class ShellProcess extends ide.TerminalProcess {
+class ShellProcess extends TerminalProcess {
 
 	constructor(options)
 	{
-		var pid = options.pid;
+		const pid = options.pid;
 
 		if (pid && processList[pid])
 			return processList[pid];
 
 		super();
+
+		options.uid = process.getuid();
+		options.gid = process.getgid();
 
 		this.spawn(getOSShell(), [], options);
 
@@ -165,6 +207,9 @@ plugin.extend({
 var
 	process, cmd = req.body.c
 ;
+	if (!pty)
+		return;
+
 	if (!cmd || !(cmd in WHITELIST))
 		return res.status(500).send(this.error('Invalid command.'));
 
@@ -176,10 +221,8 @@ var
 }).route('GET', '/shell/terminal', function(req, res) {
 	ide.http.ServerResponse.respond(res, cxl.map(processList, p => p.toJSON()), this);
 }).run(function() {
+	if (!pty)
+		return this.log('Warning: pty support not enabled');
 
 	this.rpc = new ShellRPC();
-
-	// Emulate Main Process
-	// var mainProcess = processList[process.pid] = processList.$workspace = new MainProcess();
-
 });
