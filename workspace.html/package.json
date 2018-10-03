@@ -1,8 +1,7 @@
 {
 	"name": "@cxl/workspace.html",
 	"version": "0.0.1",
-
 	"scripts": {
-		"prepublishOnly": "cp ../autocomplete-html/completions.json completions.json"
+		"prepublish": "bash prepublish.sh"
 	}
 }

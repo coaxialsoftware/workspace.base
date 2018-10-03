@@ -4,6 +4,6 @@
 	"description": "CSS Assist",
 	"public": true,
 	"scripts": {
-		"prepublishOnly": "cp ../autocomplete-css/completions.json completions.json"
+		"prepublish": "bash prepublish.sh"
 	}
 }
