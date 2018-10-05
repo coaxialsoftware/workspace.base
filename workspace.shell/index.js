@@ -113,8 +113,11 @@ class ShellProcess extends TerminalProcess {
 
 		super();
 
-		options.uid = process.getuid();
-		options.gid = process.getgid();
+		if (process.getuid)
+		{
+			options.uid = process.getuid();
+			options.gid = process.getgid();
+		}
 
 		this.spawn(getOSShell(), [], options);
 
