@@ -28,7 +28,7 @@ var
 ide.plugins.register('grep', {
 
 	commands: {
-		grep: function(term)
+		grep(term)
 		{
 			if (!term)
 				return;
@@ -55,6 +55,8 @@ ide.plugins.register('grep', {
 			// Fix for linux?
 			args.push(term, env && env.WINDIR ? '*' : '.');
 
+			editor.$footer.innerHTML = '<cxl-progress></cxl-progress>';
+
 			cxl.ajax({
 				url: '/grep',
 				method: 'POST',
@@ -68,9 +70,8 @@ ide.plugins.register('grep', {
 				}
 			}).then(function(text) {
 				grepDone(editor, text.slice(pos));
-
-				if (editor.children.length===0)
-					editor.$footer.innerHTML = '<div>No matches found.</div>';
+				editor.$footer.innerHTML = editor.children.length===0 ?
+					'<div>No matches found.</div>' : '';
 			}, function(err) {
 				editor.$footer.innerHTML = '<div>' + err.responseText + '</div>';
 			});

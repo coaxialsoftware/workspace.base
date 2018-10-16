@@ -51,7 +51,7 @@ plugin.extend({
 	{
 	var
 		me = this,
-		file = ev.filename,
+		file = ev.relativePath,
 		config = project.configuration.watch,
 		rules
 	;
