@@ -15,7 +15,12 @@ try { pty = require('node-pty-prebuilt'); } catch (e) {}
 
 function getOSShell()
 {
-	var env = process.env;
+const
+	config = ide.configuration['shell.bin'],
+	env = process.env
+;
+	if (config)
+		return config;
 
 	if (process.platform==='win32')
 		return env.COMSPEC || 'cmd.exe';
