@@ -73,7 +73,7 @@ ide.plugins.register('grep', {
 				editor.$footer.innerHTML = editor.children.length===0 ?
 					'<div>No matches found.</div>' : '';
 			}, function(err) {
-				editor.$footer.innerHTML = '<div>' + err.responseText + '</div>';
+				editor.$footer.innerHTML = '<div class="text-error">Error: ' + err + '</div>';
 			});
 
 			return editor;

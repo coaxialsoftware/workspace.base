@@ -1,6 +1,6 @@
 {
 	"name": "@cxl/workspace.css",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "CSS Assist",
 	"public": true,
 	"scripts": {

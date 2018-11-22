@@ -87,7 +87,7 @@ var plugin = new ide.Plugin({
 
 	},
 
-	updateHints: function(editor, errors)
+	updateHints(editor, errors)
 	{
 		editor.hints.clear('jshint');
 
@@ -110,7 +110,7 @@ var plugin = new ide.Plugin({
 			editor.header.setTag('jshint', '');
 	},
 
-	onMessage: function(data)
+	onMessage(data)
 	{
 	var
 		editor = ide.workspace.find(data.e)
@@ -121,7 +121,7 @@ var plugin = new ide.Plugin({
 		editor.__jshint = data;
 	},
 
-	onAssist: function(request)
+	onAssist(request)
 	{
 		var data, editor=request.editor, token=request.features.token;
 
@@ -143,7 +143,7 @@ var plugin = new ide.Plugin({
 		}
 	},
 
-	getHints: function(list, term, hints, icon)
+	getHints(list, term, hints, icon)
 	{
 		var i=0, l=list.length, p, index;
 
@@ -155,7 +155,7 @@ var plugin = new ide.Plugin({
 		}
 	},
 
-	getHintDef: function(title, icon, index, length)
+	getHintDef(title, icon, index, length)
 	{
 		return {
 			code: 'jshint',
@@ -164,7 +164,7 @@ var plugin = new ide.Plugin({
 		};
 	},
 
-	onAssistInline: function(request, data)
+	onAssistInline(request, data)
 	{
 	var
 		token = request.editor.token.current,
@@ -195,7 +195,7 @@ var plugin = new ide.Plugin({
 			request.respondInline(hints);
 	},
 
-	ready: function()
+	ready()
 	{
 		this.resources(worker);
 		this.listenTo('socket.message.jshint', this.onMessage)

@@ -3,7 +3,18 @@ ide.plugins.register('css', {
 
 	MIME_REGEX: /text\/(?:css|less|sass|x-scss)/,
 
-	onAssist: function(request)
+	$handleAtom(request, token)
+	{
+		const val = token.value;
+
+		if (val.charAt(0)==='#')
+			request.respondExtended({
+				code: 'css',
+				title: '<span style="background-color:' + val + '">' + val + '</span>'
+			});
+	},
+
+	onAssist(request)
 	{
 		if (!request.features.file || !request.features.token ||
 			!this.MIME_REGEX.test(request.features.file.mime))
@@ -13,6 +24,9 @@ ide.plugins.register('css', {
 
 		if (!token || token.row===undefined)
 			return;
+
+		if (token.type==='atom')
+			this.$handleAtom(request, token);
 
 		prev = token.type===null ? token : token.previous();
 
@@ -33,7 +47,7 @@ ide.plugins.register('css', {
 			request.pluginData('css', { tag: prev.value });
 	},
 
-	start: function()
+	start()
 	{
 		this.listenTo('assist', this.onAssist);
 	}

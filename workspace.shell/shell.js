@@ -150,7 +150,7 @@ ide.plugins.register('shell', new ide.Plugin({
 
 		'shell.list': {
 
-			fn: function()
+			fn()
 			{
 				return new ShellListEditor({ plugin: this, title: 'shell.list' });
 			},
@@ -159,7 +159,7 @@ ide.plugins.register('shell', new ide.Plugin({
 		},
 
 		shell: {
-			fn: function(pid)
+			fn(pid)
 			{
 				var editor = new Shell({ plugin: this, title: 'shell' });
 
@@ -171,7 +171,7 @@ ide.plugins.register('shell', new ide.Plugin({
 		},
 
 		mkdir: {
-			fn: function()
+			fn()
 			{
 				return shellSuccess('mkdir', arguments);
 			},
@@ -179,7 +179,7 @@ ide.plugins.register('shell', new ide.Plugin({
 		},
 
 		mv: {
-			fn: function()
+			fn()
 			{
 				return shellSuccess('mv', arguments);
 			},
@@ -187,7 +187,7 @@ ide.plugins.register('shell', new ide.Plugin({
 		},
 
 		cp: {
-			fn: function()
+			fn()
 			{
 				return shellSuccess('cp', arguments);
 			},
@@ -195,7 +195,7 @@ ide.plugins.register('shell', new ide.Plugin({
 		},
 
 		ls: {
-			fn: function() { ide.open('.'); },
+			fn() { ide.open('.'); },
 			description: "list files in current directory"
 		}
 

@@ -20,7 +20,7 @@ plugin.extend({
 
 	sourcePath: __dirname + '/git.js',
 
-	onProjectCreate: function(project)
+	onProjectCreate(project)
 	{
 		var c = project.configuration;
 
@@ -33,34 +33,46 @@ plugin.extend({
 	parseIgnore(project, data)
 	{
 	const
-		// remove comments, "!" modifier not supported
-		f = data.trim().replace(/(?:[\/\\]$)|^[#!].*$/mg, '').split("\n"),
+		// remove comments and empty lines
+		f = data.trim().replace(/(?:[\/\\]$)|^[#].*$/mg, '').split("\n"),
 		ignore = project.configuration.ignore
 	;
-		f.forEach(function(i) {
-			if (i && ignore.indexOf(i)===-1)
-				ignore.push(i);
-		});
+		//f.forEach(i => i.charAt(0)==='!' ? ignore.include(i) : ignore.push(i));
+		f.forEach(i => i && ignore.push(i));
 	},
 
-	readIgnore: function(project)
+	readIgnore(project)
 	{
 		return cxl.file.read(project.path + '/.gitignore', 'utf8')
 			.then(this.parseIgnore.bind(this, project), function() { });
 	},
 
-	onProjectLoad: function(project)
+	onGitChange(project, ev)
 	{
-		if (project.configuration.tags.git)
-			project.configuration.ignore.push('.git');
-
-		project.resolve(this.readIgnore(project));
+		if (!ev || ev.path.includes('.git/HEAD'))
+			return cxl.file.read(project.path + '/.git/HEAD', 'utf8')
+				.then(contents => project.configuration.set('git.head', contents));
 	},
 
-	reloadProject: function(project)
+	onProjectChange(project, event)
 	{
+		if (event.relativePath==='.gitignore')
+			this.readIgnore(project).then(() => project.reload());
+	},
+
+	onProjectLoad(project)
+	{
+		project.resolve(this.readIgnore(project));
+
 		if (project.configuration.tags.git)
-			project.reload();
+		{
+			project.configuration.ignore.push('.git');
+			project.resolve(this.onGitChange(project));
+			project.resources.add(
+				ide.DirectoryWatch.create(project.path + '/.git')
+					.subscribe(ev => this.onGitChange(project, ev))
+			);
+		}
 	},
 
 	server: cxl('workspace').server
@@ -151,5 +163,5 @@ var
 }).config(function() {
 	ide.plugins.on('project.create', this.onProjectCreate.bind(this));
 	ide.plugins.on('project.load', this.onProjectLoad.bind(this));
-	ide.plugins.on('project.filechange:.gitignore', this.reloadProject.bind(this));
+	ide.plugins.on('project.filechange', this.onProjectChange.bind(this));
 });

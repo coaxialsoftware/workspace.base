@@ -16,4 +16,5 @@ plugin.extend({
 	var grep = new ide.Process('grep', req.body.q, { cwd: req.body.p });
 
 	new ide.http.StreamResponse(res, grep.stream);
+
 });

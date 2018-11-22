@@ -1,12 +1,47 @@
+(ide => {
+"use strict";
+
+const
+	HEAD_REGEX = /.+\/(.+)/
+;
 
 ide.plugins.register('git', {
 
 	icon: 'git',
 
+	onProjectLoad()
+	{
+		this.updateState();
+	},
+
+	updateState()
+	{
+	const
+		head = HEAD_REGEX.exec(ide.project.get('git.head')),
+		branch = this.activeBranch = head && head[1]
+	;
+		if (branch)
+			this.hint.tags = [ '<ide-icon class="branch"></ide-icon> ' + branch ];
+
+		if (!ide.assist.panel.visible && this.activeBranch!==branch)
+		{
+			ide.notify({ code: 'git', title: 'Switched to branch ' + this.activeBranch});
+			this.activeBranch = branch;
+		}
+	},
+
+	ready()
+	{
+		this.hint = new ide.DynamicItem({ code: 'git' });
+		this.updateState();
+		ide.plugins.on('project.load', this.onProjectLoad, this);
+		ide.assist.addPermanentItem(this.hint);
+	},
+
 	commands: {
 
 		'git.status': {
-			fn: function()
+			fn()
 			{
 				var editor = new ide.ListEditor({
 					title: 'git status', plugin: this, itemClass: ide.FileItem
@@ -26,7 +61,7 @@ ide.plugins.register('git', {
 		},
 
 		'git.log': {
-			fn: function(file)
+			fn(file)
 			{
 				var editor;
 
@@ -62,7 +97,7 @@ ide.plugins.register('git', {
 			description: 'Show history for path'
 		},
 		'git.pull': {
-			fn: function()
+			fn()
 			{
 				return cxl.ajax.get('/git/pull', { p: ide.project.id }).then(function(res) {
 					ide.open(new ide.File(null, res));
@@ -71,7 +106,7 @@ ide.plugins.register('git', {
 			description: 'Fetch from and integrate with another repository'
 		},
 		'git.diff': {
-			fn: function(file)
+			fn(file)
 			{
 				return cxl.ajax.post('/git/diff', { project: ide.project.id, file: file })
 					.then(res => ide.open(new ide.File(null, res.content, 'text/x-diff')))
@@ -80,7 +115,7 @@ ide.plugins.register('git', {
 			description: 'Show changes between commits, commit and working tree, etc'
 		},
 		'git.show': {
-			fn: function(file, rev)
+			fn(file, rev)
 			{
 				file = file || ide.editor && ide.editor.file && ide.editor.file.name;
 
@@ -102,3 +137,5 @@ ide.plugins.register('git', {
 	}
 
 });
+
+})(this.ide);

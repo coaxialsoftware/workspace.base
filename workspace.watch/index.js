@@ -33,7 +33,7 @@ plugin.extend({
 			progress: -1
 		}
 	;
-		project.notify(hint);
+		project.socket.notify(hint);
 		project.exec(tasks, { plugin: plugin })
 			.then(function() {
 				hint.className = 'success';
@@ -43,7 +43,7 @@ plugin.extend({
 				hint.title = 'Error: ' + e;
 			}).then(function() {
 				hint.progress = 1;
-				project.notify(hint);
+				project.socket.notify(hint);
 			});
 	},
 
