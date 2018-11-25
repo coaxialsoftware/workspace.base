@@ -30,6 +30,8 @@ ide.plugins.register('grep', {
 	commands: {
 		grep(term)
 		{
+			term = term || ide.editor && ide.editor.token && ide.editor.token.value;
+
 			if (!term)
 				return;
 		var

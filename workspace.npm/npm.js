@@ -6,7 +6,7 @@ ide.plugins.register('npm', new ide.Plugin({
 	commands: {
 
 		'npm.view': {
-			fn: function(package)
+			fn(package)
 			{
 				return cxl.ajax.get('/npm/view?p='+ ide.project.id +
 					'&package=' + encodeURI(package||'')).then(function(content) {
@@ -19,7 +19,7 @@ ide.plugins.register('npm', new ide.Plugin({
 		},
 
 		'npm.install': {
-			fn: function(package) {
+			fn(package) {
 
 				var n = ide.notify({ progress: 0, title: `npm install ${package||''}` });
 
@@ -37,7 +37,7 @@ ide.plugins.register('npm', new ide.Plugin({
 		},
 
 		'npm.list': {
-			fn: function() {
+			fn() {
 				var editor = new ide.ListEditor({
 					title: 'npm.list'
 				});
@@ -73,7 +73,7 @@ ide.plugins.register('npm', new ide.Plugin({
 		}
 	},
 
-	start: function()
+	start()
 	{
 		ide.resources.registerSVGIcon('npm', `<path d="M0,327.303833h142.6240234v28.7337952h113.8902283V327.303833H512V155.9623718H0.0163122L0,327.303833z M142.6076965,298.5700989h-28.7337723v-85.1564636H86.1686859v85.1564636H27.6889133V184.6798553h114.9187851V298.5700989z M284.7256165,298.6231689h-55.9165802v28.6806946h-58.4797668V184.6798553h114.9187775L284.7256165,298.6231689z M484.2784424,298.6231689h-28.7337952v-85.2095337h-28.7337646v85.2095337h-28.7337952v-85.2095184h-27.7052307v85.2095184h-57.4512329V184.6798859H484.262085L484.2784424,298.6231689z M228.8090363,269.8363037h26.6766968v-56.4389954h-26.6766968V269.8363037z"/>`, '0 0 512 512');
 	}

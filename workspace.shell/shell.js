@@ -1,4 +1,4 @@
-(function(ide, cxl) {
+((ide, cxl)=>{
 "use strict";
 
 /**
