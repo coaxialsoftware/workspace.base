@@ -123,7 +123,7 @@ plugin.extend({
 
 	ide.plugins.on('project.load', function(project) {
 		if (project.configuration.tags.npm)
-			project.files.ignore('node_modules');
+			project.files.ignore('**/node_modules');
 	});
 
 	this.$ls = new NPMLanguageServer('npm', /application\/json/, /package\.json/);

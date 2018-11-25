@@ -5,6 +5,11 @@ const
 	HEAD_REGEX = /.+\/(.+)/
 ;
 
+ide.File.registerIconProvider(file => {
+	if (file.name==='.gitignore')
+		return 'git';
+});
+
 ide.plugins.register('git', {
 
 	icon: 'git',
