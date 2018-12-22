@@ -1,0 +1,7 @@
+{
+	"name": "@cxl/workspace.prettier",
+	"version": "0.0.1",
+	"dependencies": {
+		"prettier": "*"
+	}
+}

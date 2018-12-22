@@ -35,6 +35,7 @@ ide.plugins.register('speech', {
 
 		this.voices = speechSynthesis.getVoices();
 		this.voiceMap = {};
+		this.disabled = !!this.data('disabled');
 
 		this.voices.forEach(v => {
 			this.voiceMap[v.name] = v;
@@ -43,18 +44,30 @@ ide.plugins.register('speech', {
 		this.startNotify();
 	},
 
+	disable()
+	{
+		this.disabled = true;
+		this.data('disabled', 1);
+	},
+
+	enable()
+	{
+		this.disabled = false;
+		this.data('disabled', undefined);
+	},
+
 	commands: {
 		speech: {
 			fn(state)
 			{
 				if (state==='disable')
-					this.disabled = true;
+					this.disable();
 				else if (state==='enable')
-					this.disabled = false;
+					this.enable();
 			}
 		},
-		'speech.disable': function() { this.disabled = true; },
-		'speech.enable': function() { this.disabled = false; },
+		'speech.disable': function() { this.disable(); },
+		'speech.enable': function() { this.enable(); },
 		'speech.voices': function() {
 			const result = new ide.ListEditor({
 				title: 'speech.voices'

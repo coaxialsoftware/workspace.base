@@ -1,5 +1,5 @@
-
-(function(ide) {
+(ide => {
+"use strict";
 
 function findFunctionAtCursor(line, ch, functions)
 {

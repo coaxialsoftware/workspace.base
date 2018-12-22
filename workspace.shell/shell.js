@@ -102,7 +102,6 @@ class ShellItem extends ide.Item {
 
 	enter()
 	{
-		// TODO risky
 		ide.run('shell', [ this.code ]);
 	}
 

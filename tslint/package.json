@@ -1,0 +1,8 @@
+{
+	"name": "@cxl/workspace.tslint",
+	"version": "0.0.1",
+	"dependencies": {
+		"tslint": "*",
+		"typescript": "*"
+	}
+}
