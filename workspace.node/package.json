@@ -1,5 +1,5 @@
 {
-	"name": "@cxl/workspace",
+	"name": "@cxl/workspace.node",
 	"version": "0.0.1",
 	"description": "NodeJS plugin"
 }

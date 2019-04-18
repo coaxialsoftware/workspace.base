@@ -8,7 +8,7 @@ ide.plugins.register('npm', new ide.Plugin({
 		'npm.view': {
 			fn(package)
 			{
-				return cxl.ajax.get('/npm/view?p='+ ide.project.id +
+				return cxl.ajax.get('npm/view?p='+ ide.project.id +
 					'&package=' + encodeURI(package||'')).then(function(content) {
 
 					return ide.open(
@@ -29,7 +29,7 @@ ide.plugins.register('npm', new ide.Plugin({
 					ide.notify(n);
 				}
 
-				return cxl.ajax.post('/npm/install', {
+				return cxl.ajax.post('npm/install', {
 					project: ide.project.id, package: package
 				}).then(done, done);
 			},
@@ -47,7 +47,7 @@ ide.plugins.register('npm', new ide.Plugin({
 					ide.run('npm.view', [ pkg ]);
 				}
 
-				cxl.ajax.get('/npm/list?p=' + ide.project.id).then(function(pkg) {
+				cxl.ajax.get('npm/list?p=' + ide.project.id).then(function(pkg) {
 
 					var items = [];
 

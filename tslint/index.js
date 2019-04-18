@@ -39,7 +39,7 @@ class AssistServer extends ide.AssistServer {
 						endRow: rule.endPosition.lineAndCharacter.line,
 						endColumn: rule.endPosition.lineAndCharacter.character
 					},
-					className: rule.ruleSeverity==='error' ? 'error' : 'warning'
+					className: rule.ruleSeverity==='error' ? 'error' : 'warn'
 				};
 			});
 

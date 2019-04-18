@@ -12,7 +12,11 @@ var
 
 	STATUS_CODE = {
 		M: 'Modified',
-		A: 'Added'
+		A: 'Added',
+		D: 'Deleted',
+		R: 'Renamed',
+		C: 'Copied',
+		U: 'Updated'
 	}
 ;
 

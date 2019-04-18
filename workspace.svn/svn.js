@@ -33,7 +33,7 @@ ide.plugins.register('svn', new ide.Plugin({
 					}
 				});
 
-				cxl.ajax.get('/svn/log?p=' + ide.project.id + '&f=' + id, function(res) {
+				cxl.ajax.get('svn/log?p=' + ide.project.id + '&f=' + id, function(res) {
 					editor.add(res);
 				});
 
@@ -50,7 +50,7 @@ ide.plugins.register('svn', new ide.Plugin({
 					slot: o.slot,
 					plugin: 'svn.svnUp'
 				});
-				cxl.ajax.post('/svn/up?p=' + ide.project.id, function(res) {
+				cxl.ajax.post('svn/up?p=' + ide.project.id, function(res) {
 					editor.add(res.files);
 					editor.set('html', 'Revision ' + res.revision);
 				});
@@ -64,7 +64,7 @@ ide.plugins.register('svn', new ide.Plugin({
 			fn: function()
 			{
 				if (ide.editor && ide.editor.file)
-					cxl.ajax.post('/svn/resolve?f=' + ide.editor.file.path);
+					cxl.ajax.post('svn/resolve?f=' + ide.editor.file.path);
 			},
 			icon: 'svn',
 			help: 'Resolve file with working revision'
@@ -76,7 +76,7 @@ ide.plugins.register('svn', new ide.Plugin({
 	{
 		var id = file instanceof ide.File ? file.id : file;
 
-		cxl.ajax.get('/svn/cat?f=' + id + '&rev=' + rev, function(res) {
+		cxl.ajax.get('svn/cat?f=' + id + '&rev=' + rev, function(res) {
 			ide.open(new ide.File(res));
 		});
 	}

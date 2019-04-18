@@ -2,7 +2,7 @@
 QUnit.module('git', {
 	before()
 	{
-		return cxl.ajax.get('/project?n=git&full=1').then(project => {
+		return cxl.ajax.get('project?n=git&full=1').then(project => {
 			this.project = project;
 		});
 	}

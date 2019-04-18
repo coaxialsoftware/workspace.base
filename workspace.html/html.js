@@ -3,7 +3,7 @@ ide.plugins.register('html', {
 
 	MIME_REGEX: /text\/(?:html)/,
 
-	onAssist: function(request)
+	onAssist(request)
 	{
 		if (!request.features.file || !request.features.token ||
 			!this.MIME_REGEX.test(request.features.file.mime))
@@ -18,7 +18,7 @@ ide.plugins.register('html', {
 			request.pluginData('html', { tag: tag, attribute: attribute });
 	},
 
-	start: function()
+	start()
 	{
 		this.listenTo('assist', this.onAssist);
 	}

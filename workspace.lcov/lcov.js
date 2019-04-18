@@ -77,7 +77,7 @@ ide.plugins.register('lcov', new ide.Plugin({
 			var fn = editor.file && editor.file.name;
 
 			if (fn && editor.file.hasChanged)
-				cxl.ajax.get('/lcov?p=' + ide.project.id + '&f=' + fn)
+				cxl.ajax.get('lcov?p=' + ide.project.id + '&f=' + fn)
 					.then(this.onData.bind(this, editor));
 		}
 	},

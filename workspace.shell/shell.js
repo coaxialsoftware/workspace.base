@@ -85,6 +85,7 @@ class Shell extends ide.Terminal {
 	quit()
 	{
 		ide.socket.notify('shell', 'disconnect', { pid: this.pid });
+		super.quit();
 	}
 
 	render(p)
@@ -117,7 +118,7 @@ class ShellListEditor extends ide.ListEditor {
 		this.reset();
 		this.loading = true;
 
-		cxl.ajax.get('/shell/terminal').then(data => {
+		cxl.ajax.get('shell/terminal').then(data => {
 			this.loading = false;
 			this.add(data);
 		});

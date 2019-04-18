@@ -52,7 +52,7 @@ ide.plugins.register('git', {
 					title: 'git status', plugin: this, itemClass: ide.FileItem
 				});
 
-				cxl.ajax.get('/git/status?p=' + ide.project.id).then(function(res) {
+				cxl.ajax.get('git/status?p=' + ide.project.id).then(function(res) {
 					editor.add(res);
 				}, function(err) {
 					editor.add([
@@ -89,7 +89,7 @@ ide.plugins.register('git', {
 					ide.run('git.show', [ file, r.hash ]);
 				}
 
-				cxl.ajax.get('/git/log', { f: file, p: ide.project.id }).then(function(res) {
+				cxl.ajax.get('git/log', { f: file, p: ide.project.id }).then(function(res) {
 					editor.add(res.map(function(r) {
 						r.enter = enter.bind(null, r);
 						r.tags[0] = (new Date(r.tags[0])).toLocaleString();
@@ -104,7 +104,7 @@ ide.plugins.register('git', {
 		'git.pull': {
 			fn()
 			{
-				return cxl.ajax.get('/git/pull', { p: ide.project.id }).then(function(res) {
+				return cxl.ajax.get('git/pull', { p: ide.project.id }).then(function(res) {
 					ide.open(new ide.File(null, res));
 				});
 			},
@@ -113,7 +113,9 @@ ide.plugins.register('git', {
 		'git.diff': {
 			fn(file)
 			{
-				return cxl.ajax.post('/git/diff', { project: ide.project.id, file: file })
+				file = file || ide.editor && ide.editor.file && ide.editor.file.name;
+
+				return cxl.ajax.post('git/diff', { project: ide.project.id, file: file })
 					.then(res => ide.open(new ide.File(null, res.content, 'text/x-diff')))
 					.then(editor => { editor.command = 'git.diff'; });
 			},
@@ -130,7 +132,7 @@ ide.plugins.register('git', {
 						className: 'error'
 					});
 
-				return cxl.ajax.get('/git/show?f=' + file + '&h=' + rev + '&p=' + ide.project.id)
+				return cxl.ajax.get('git/show?f=' + file + '&h=' + rev + '&p=' + ide.project.id)
 					.then(res => ide.open(new ide.File(null, res.content, res.mime)))
 					.then(editor => {
 						editor.command = 'git.show';

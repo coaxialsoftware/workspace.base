@@ -14,12 +14,16 @@ var
 	{
 		match = GREP_REGEX.exec(result[i]);
 		if (match && (!ignore || !ignore.test(match[1])))
+		{
+			const desc = match[3];
+
 			files.push(new ide.FileItem({
 				line: match[2],
 				value: match[1],
 				title: match[1] + ':' + match[2],
-				description: '<pre>' + cxl.escape(match[3]) + '</pre>'
+				description: '<pre>' + cxl.escape(desc.length > 100 ? desc.slice(0, 100) + '...' : desc) + '</pre>'
 			}));
+		}
 	}
 
 	editor.add(files);
@@ -45,13 +49,13 @@ ide.plugins.register('grep', {
 				plugin: this
 			})
 		;
-			args.push('-0rnIP');
+			args.push('-rnI');
 
 			if (exclude instanceof Array)
 				exclude.forEach(function(f) {
 					var d = f.replace(/ /g, '\\ ').replace(/\/$/, '');
-					args.push('--exclude-dir=' + d + '',
-						'--exclude=' + d);
+					args.push('--exclude-dir="' + d + '"',
+						'--exclude="' + d + '"');
 				});
 
 			// Fix for linux?
@@ -60,7 +64,7 @@ ide.plugins.register('grep', {
 			editor.$footer.innerHTML = '<cxl-progress></cxl-progress>';
 
 			cxl.ajax({
-				url: '/grep',
+				url: 'grep',
 				method: 'POST',
 				data: { q: args, p: ide.project.id },
 				progress: function(a)

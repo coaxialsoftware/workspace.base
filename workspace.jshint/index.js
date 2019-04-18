@@ -11,7 +11,7 @@ plugin.extend({
 
 	sourcePath: __dirname + '/jshint.js',
 
-	findOptions: function(p, f)
+	findOptions(p, f)
 	{
 	var
 		dir = f ? path.dirname(f) : p.path,
@@ -36,7 +36,7 @@ plugin.extend({
 		}
 	},
 
-	doLint: function(request,options)
+	doLint(request,options)
 	{
 		var js = request.features.file.content;
 
@@ -52,7 +52,7 @@ plugin.extend({
 		return payload;
 	},
 
-	lintFile: function(client, data)
+	lintFile(client, data)
 	{
 	var
 		options = this.findOptions(data.p, data.f)
@@ -64,21 +64,21 @@ plugin.extend({
 	/**
 	 * data: { $:id, p:project, f:path, js:code }
 	 */
-	onMessage: function(client, data)
+	onMessage(client, data)
 	{
 		if (data.op==='lint')
 			this.operation(`Linting file ${data.f}`, this.lintFile.bind(this, client,data));
 	},
 
-	onAssist: function(request)
+	onAssist(request)
 	{
-		var options, file = request.features.file;
+		var options, file = request.features.file, mime = file && file.mime;
 
 		if (!(file && file.diffChanged &&
-			(file.mime ==='application/json' || file.mime==='application/javascript')))
+			(mime ==='application/json' || mime==='application/javascript')))
 			return;
 
-		options = this.findOptions(request.project, file.path);
+		options = this.findOptions(request.project, file.path, mime);
 		this.doLint(request, options);
 	}
 
