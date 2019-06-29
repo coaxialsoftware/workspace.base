@@ -6,14 +6,14 @@ const GREP_REGEX = /^(?:\.\/)?(.+):(\d+):\s*(.+)\s*/;
 function grepDone(editor, result)
 {
 var
-	i = 0, match, files = [], ignore = ide.project.ignoreRegex
+	i = 0, match, files = []
 ;
 	result = result.split("\n");
 
 	for (; i<result.length; i++)
 	{
 		match = GREP_REGEX.exec(result[i]);
-		if (match && (!ignore || !ignore.test(match[1])))
+		if (match && ide.project.files.includes(match[1]))
 		{
 			const desc = match[3];
 
@@ -54,8 +54,7 @@ ide.plugins.register('grep', {
 			if (exclude instanceof Array)
 				exclude.forEach(function(f) {
 					var d = f.replace(/ /g, '\\ ').replace(/\/$/, '');
-					args.push('--exclude-dir="' + d + '"',
-						'--exclude="' + d + '"');
+					args.push(`--exclude-dir='${d}'`, `--exclude='${d}'`);
 				});
 
 			// Fix for linux?

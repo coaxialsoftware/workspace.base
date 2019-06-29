@@ -5,11 +5,13 @@
  */
 "use strict";
 
-var
+const
 	fs = require('fs'),
+	path = require('path'),
 
 	plugin = module.exports = cxl('workspace.git'),
 
+	REGEX_BLAME = /author (.+)$[\s\S]+author-time (.+)[\s\S]+summary (.+)/m,
 	STATUS_CODE = {
 		M: 'Modified',
 		A: 'Added',
@@ -19,6 +21,36 @@ var
 		U: 'Updated'
 	}
 ;
+
+function execRequest(req, res, cmd)
+{
+const
+	project = ide.projectManager.getProject(req.body.project),
+	file = req.body.file || ''
+;
+	return ide.ServerResponse.respond(res, project.exec(cmd));
+}
+
+function onAssist(req)
+{
+	const token = req.features.token, file=req.features.file, project=req.project;
+
+	if (req.extended && token && file && file.path && !file.changed)
+	{
+		const filePath = path.relative(project.path, file.path), row = token.row+1;
+
+		project.exec(`git blame -p -L${row},${row} ${filePath}`)
+			.then(res => {
+				const m = REGEX_BLAME.exec(res), date = new Date(parseInt(m[2]) * 1000);
+				req.respondExtended([{
+					code: 'git.blame',
+					tags: [ date ],
+					title: m[1],
+					description: m[3]
+				}]);
+			}, () => {});
+	}
+}
 
 plugin.extend({
 
@@ -164,8 +196,13 @@ var
 		project.exec(cmd, { plugin: this }, this).then(content => ({ content: content }))
 	);
 
-}).config(function() {
+})
+.route('POST', '/git/checkout', (req, res) => {
+	execRequest(req, res, `git diff ${req.body.file}`);
+})
+.config(function() {
 	ide.plugins.on('project.create', this.onProjectCreate.bind(this));
 	ide.plugins.on('project.load', this.onProjectLoad.bind(this));
 	ide.plugins.on('project.filechange', this.onProjectChange.bind(this));
+	ide.plugins.on('assist', onAssist);
 });

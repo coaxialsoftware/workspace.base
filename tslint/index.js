@@ -27,9 +27,11 @@ class AssistServer extends ide.AssistServer {
 
 	parseResult(request, result)
 	{
+		let hints;
+
 		if (result.failures)
 		{
-			var hints = result.failures.map(function(rule) {
+			hints = result.failures.map(function(rule) {
 				return {
 					code: 'tslint',
 					title: rule.failure,
@@ -42,9 +44,9 @@ class AssistServer extends ide.AssistServer {
 					className: rule.ruleSeverity==='error' ? 'error' : 'warn'
 				};
 			});
-
-			request.respond('hints', 'setHints', [ hints, 'tslint' ]);
 		}
+
+		request.respond('hints', 'setHints', [ hints, 'tslint' ]);
 	}
 
 	getLinter(project)
@@ -57,6 +59,9 @@ class AssistServer extends ide.AssistServer {
 
 	getProgram(project)
 	{
+		// Disable
+		return null;
+
 		if (!project.data.tslint)
 			project.data.tslint = {};
 
@@ -75,14 +80,14 @@ class AssistServer extends ide.AssistServer {
 		if (!request.features.hints)
 			return;
 
-		var
+		const
 			file = request.features.file,
-			linter = this.getLinter(request.project)
+			project = request.project,
+			linter = this.getLinter(project)
 		;
 
 		setImmediate(() => {
-			var result = this.lint(path.resolve(file.path), file.content, linter, request.project);
-
+			const result = this.lint(path.resolve(file.path), file.content, linter, project);
 			this.parseResult(request, result);
 		});
 	}

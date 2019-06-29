@@ -24,6 +24,8 @@ module.exports = cxl('workspace.prettier').extend({
 						;
 							if (str !== newStr)
 								file.content = Buffer.from(newStr);
+						}).catch(e => {
+							this.error(e);
 						});
 				});
 		}
