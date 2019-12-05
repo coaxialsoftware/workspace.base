@@ -13,7 +13,7 @@ plugin.extend({
 
 }).route('POST', '/grep', function(req, res) {
 
-	var grep = new ide.Process('grep', req.body.q, { cwd: req.body.p });
+	const grep = new ide.Process('grep', req.body.q, { cwd: req.body.p, shell: true });
 
 	new ide.http.StreamResponse(res, grep.stream);
 

@@ -13,7 +13,7 @@ module.exports = cxl('workspace.prettier').extend({
 		{
 			return prettier.getFileInfo(file.path)
 				.then(info => {
-					return info.inferredParser && prettier.resolveConfig(file.path)
+					return info.inferredParser && prettier.resolveConfig(file.path, { useCache: false })
 						.then(options => {
 							if (!options)
 								return;

@@ -12,6 +12,7 @@ const
 
 var pty;
 try { pty = require('node-pty-prebuilt'); } catch (e) {}
+try { pty = require('node-pty'); } catch (e) {}
 
 function getOSShell()
 {

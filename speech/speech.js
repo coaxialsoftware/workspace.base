@@ -12,7 +12,7 @@ ide.plugins.register('speech', {
 
 		ide.notify = (msg, kls) =>
 		{
-			if (!this.disabled)
+			if (!this.data('disabled'))
 			{
 			const
 				utter = new SpeechSynthesisUtterance(typeof(msg)==='string' ? msg : msg.title),

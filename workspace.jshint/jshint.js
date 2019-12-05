@@ -93,9 +93,6 @@ var plugin = new ide.Plugin({
 
 		if (errors)
 		{
-			editor.header.setTag('jshint', '<span title="jshint: ' +
-				errors.length + ' error(s) found.">jshint:' + errors.length + '</span>', 'error');
-
 			errors.forEach(function(e) {
 				if (e)
 					editor.hints.add({
