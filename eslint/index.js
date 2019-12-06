@@ -1,32 +1,42 @@
-const eslint = require('eslint'),
-	engine = eslint.CLIEngine;
+const path = require('path');
+
 class AssistServer extends ide.AssistServer {
-	lint(filename, content, linter) {
-		const config = engine.getConfigForFile(filename),
-			messages = linter.verify(content, config, { filename: filename });
-		return messages;
+	lint(filename, content, engine) {
+		// let config;
+
+		/*try {
+			config = engine.getConfigForFile(filename);
+		} catch (e) {
+			plugin.dbg(e);
+		}
+
+		if (!config) return;*/
+
+		return engine.executeOnText(content, filename);
+		// return linter.verify(content, config, { filename: filename });
 	}
 
-	parseResult(request, result) {
-		let hints;
+	parseResult(request, report) {
+		let hints,
+			result = report.results[0].messages;
 
-		if (result.failures) {
-			hints = result.failures.map(function(rule) {
+		if (result.length) {
+			hints = result.map(rule => {
 				return {
-					code: 'tslint',
-					title: rule.failure,
+					code: 'eslint',
+					title: rule.message,
 					range: {
-						row: rule.startPosition.lineAndCharacter.line,
-						column: rule.startPosition.lineAndCharacter.character,
-						endRow: rule.endPosition.lineAndCharacter.line,
-						endColumn: rule.endPosition.lineAndCharacter.character
+						row: rule.line - 1,
+						column: rule.column,
+						endRow: rule.endLine - 1,
+						endColumn: rule.endColumn
 					},
-					className: rule.ruleSeverity === 'error' ? 'error' : 'warn'
+					className: rule.severity === 2 ? 'error' : 'warn'
 				};
 			});
 		}
 
-		request.respond('hints', 'setHints', [hints, 'tslint']);
+		request.respond('hints', 'setHints', [hints, 'eslint']);
 	}
 
 	canAssist(req) {
@@ -40,15 +50,41 @@ class AssistServer extends ide.AssistServer {
 		);
 	}
 
-	getLinter(project) {
-		if (!project.tags.eslint) return;
+	getEslint(project) {
+		let path;
 
-		return (
-			project.data.eslint.linter ||
-			(project.data.eslint = {
-				linter: new eslint.Linter()
-			})
-		);
+		try {
+			path = require.resolve('eslint', { paths: [project.path] });
+			plugin.dbg(`Found local eslint at ${path}`);
+		} catch (e) {
+			path = 'eslint';
+		}
+
+		const eslint = require(path);
+
+		plugin.log(`Using eslint ${eslint.Linter.version}`);
+
+		return eslint;
+	}
+
+	getLinter(project) {
+		const data = project.data;
+
+		if (!data.eslint) {
+			const cwd = path.resolve(project.path);
+			const eslint = this.getEslint(project);
+
+			data.eslint = {
+				/*linter: new eslint.Linter({
+					cwd
+				}),*/
+				cli: new eslint.CLIEngine({
+					cwd
+				})
+			};
+		}
+
+		return data.eslint.cli;
 	}
 
 	onAssist(request) {
@@ -66,21 +102,15 @@ class AssistServer extends ide.AssistServer {
 				linter,
 				project
 			);
-			console.log(result);
-			// this.parseResult(request, result);
+			this.parseResult(request, result);
 		});
 	}
 }
 
-function onProjectLoad(project) {
-	if (project.path === '.') return;
-}
-
-module.exports = cxl('workspace.eslint')
+const plugin = (module.exports = cxl('workspace.eslint')
 	.config(function() {
 		this.server = workspace.server;
 	})
 	.run(function() {
-		ide.plugins.on('project.load', onProjectLoad);
 		new AssistServer();
-	});
+	}));
