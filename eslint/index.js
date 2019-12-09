@@ -2,25 +2,18 @@ const path = require('path');
 
 class AssistServer extends ide.AssistServer {
 	lint(filename, content, engine) {
-		// let config;
-
-		/*try {
-			config = engine.getConfigForFile(filename);
+		try {
+			return engine.executeOnText(content, filename);
 		} catch (e) {
-			plugin.dbg(e);
+			return;
 		}
-
-		if (!config) return;*/
-
-		return engine.executeOnText(content, filename);
-		// return linter.verify(content, config, { filename: filename });
 	}
 
 	parseResult(request, report) {
 		let hints,
-			result = report.results[0].messages;
+			result = report && report.results[0].messages;
 
-		if (result.length) {
+		if (result && result.length) {
 			hints = result.map(rule => {
 				return {
 					code: 'eslint',
@@ -75,9 +68,6 @@ class AssistServer extends ide.AssistServer {
 			const eslint = this.getEslint(project);
 
 			data.eslint = {
-				/*linter: new eslint.Linter({
-					cwd
-				}),*/
 				cli: new eslint.CLIEngine({
 					cwd
 				})
@@ -102,6 +92,7 @@ class AssistServer extends ide.AssistServer {
 				linter,
 				project
 			);
+
 			this.parseResult(request, result);
 		});
 	}

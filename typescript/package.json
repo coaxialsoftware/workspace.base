@@ -1,7 +1,11 @@
 {
 	"name": "@cxl/workspace.typescript",
 	"version": "0.0.1",
+	"files": [
+		"index.js",
+		"worker.js"
+	],
 	"dependencies": {
-		"typescript": "*"
+		"typescript": "^3.7.3"
 	}
 }
