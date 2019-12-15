@@ -28,16 +28,9 @@ function onAssist(req) {
 		file = req.features.file,
 		project = req.project;
 
-	if (
-		req.extended &&
-		token &&
-		file &&
-		file.path &&
-		!file.changed &&
-		token.row
-	) {
+	if (req.extended && token && file && file.path && !file.changed) {
 		const filePath = path.relative(project.path, file.path),
-			row = token.row + 1;
+			row = (token.row || 0) + 1;
 
 		project
 			.exec(`git blame -p -L${row},${row} ${filePath}`, {

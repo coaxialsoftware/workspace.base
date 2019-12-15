@@ -2,6 +2,17 @@ import { workerData, parentPort } from 'worker_threads';
 import * as fs from 'fs';
 import * as path from 'path';
 
+interface ProjectFile {
+	filename: string;
+	mime: string;
+}
+
+interface Project {
+	path: string;
+	programs?: string[];
+	files: ProjectFile[];
+}
+
 const ENTITIES_REGEX = /[&<>]/g,
 	ENTITIES_MAP = {
 		'&': '&amp;',
@@ -13,11 +24,6 @@ function escapeHtml(str: string) {
 	return (
 		str && str.replace(ENTITIES_REGEX, e => (ENTITIES_MAP as any)[e] || '')
 	);
-}
-
-interface Project {
-	path: string;
-	programs?: string[];
 }
 
 class LanguageServiceHost {
@@ -34,13 +40,12 @@ class LanguageServiceHost {
 		useCaseSensitiveFileNames: true
 	};
 
-	private configSubscription: any;
-
-	constructor(private ts: any, private configFile: string) {
+	constructor(private ts: any, public configFile: string) {
 		this.$initConfig(configFile);
 	}
 
 	private $parseConfig(configFile: string) {
+		// TODO handle errors
 		const config = this.ts.readConfigFile(configFile, this.readFile);
 		const parsed = this.ts.parseJsonConfigFileContent(
 			config.config,
@@ -103,7 +108,7 @@ class LanguageService {
 	host: LanguageServiceHost;
 	service: any;
 
-	constructor(private ts: any, configFile: string) {
+	constructor(ts: any, configFile: string) {
 		const host = (this.host = new LanguageServiceHost(ts, configFile));
 		this.service = ts.createLanguageService(host);
 	}
@@ -114,7 +119,7 @@ class LanguageService {
 }
 
 function findTypescript(project: Project) {
-	let path;
+	let path: string;
 
 	try {
 		path = require.resolve('typescript', { paths: [project.path] });
@@ -137,13 +142,16 @@ function findTypescript(project: Project) {
 }
 
 let languageServices: LanguageService[];
+const CONFIG_FILE_REGEX = /tsconfig(?:\..*)?\.json$/;
 
-function findConfigFiles({ path, programs }: Project, ts: any) {
+function findConfigFiles({ path, programs, files }: Project) {
 	if (programs) return programs.map(p => path + '/' + p);
-
-	const result = ts.findConfigFile(path, fs.existsSync);
-
-	return result && [result];
+	return (
+		files &&
+		files
+			.filter(file => CONFIG_FILE_REGEX.test(file.filename))
+			.map(file => `${path}/${file.filename}`)
+	);
 }
 
 function load(project: Project) {
@@ -151,13 +159,13 @@ function load(project: Project) {
 
 	if (languageServices) {
 		languageServices.forEach(ls => ls.dispose());
-	} else {
-		ts = findTypescript(project);
 	}
 
-	let configFiles = findConfigFiles(project, ts);
+	ts = findTypescript(project);
 
-	if (!configFiles)
+	let configFiles = findConfigFiles(project);
+
+	if (!configFiles || configFiles.length === 0)
 		return console.log(
 			`No tsconfig file found for project "${project.path}"`
 		);
@@ -173,7 +181,12 @@ function load(project: Project) {
 	});
 }
 
-function getCompletions(languageService: any, file: any, token: any, $: any) {
+function getCompletions(
+	languageService: any,
+	file: any,
+	token: any,
+	$: number
+) {
 	const result = languageService.getCompletionsAtPosition(file, token.index),
 		matches =
 			result &&
@@ -195,7 +208,7 @@ function getCompletions(languageService: any, file: any, token: any, $: any) {
 		});
 }
 
-function getHints(ls: any, file: any, $: any) {
+function getHints(ls: any, file: any, $: number) {
 	const diagnostics = [
 		...ls.getSyntacticDiagnostics(file),
 		...ls.getSemanticDiagnostics(file),
@@ -217,8 +230,8 @@ function flatHints(rule: any, msg?: any): any {
 	if (typeof msg === 'string')
 		return {
 			code: 'typescript',
-			title: msg,
-			className: 'error',
+			title: escapeHtml(msg),
+			className: rule.category > 1 ? 'warn' : 'error',
 			range: { index: rule.start, length: rule.length }
 		};
 	else {
@@ -241,10 +254,9 @@ function processTags(hints: any[], result: any) {
 	});
 }
 
-function getExtended(languageService: any, file: any, token: any, $: any) {
+function getExtended(languageService: any, file: any, token: any, $: number) {
 	const result = languageService.getQuickInfoAtPosition(file, token.index);
 	if (result) {
-		console.log(result);
 		const hints = [
 			{
 				code: 'ts',
@@ -280,7 +292,7 @@ function onAssist({ token, file, extended, $ }: any) {
 
 			if (file.diffChanged) {
 				getHints(ls.service, file.path, $);
-				if (!token.cursorValue) return;
+				if (!token.cursorValue) return true;
 				getCompletions(ls.service, file.path, token, $);
 			}
 
@@ -300,8 +312,11 @@ function refreshFiles() {
 load(workerData.project);
 
 parentPort?.on('message', (ev: any) => {
-	if (ev.type === 'assist') onAssist(ev);
-	else if (ev.type === 'refresh') load(ev.project);
-	else if (ev.type === 'refresh.files') refreshFiles();
-	else console.log(ev);
+	try {
+		if (ev.type === 'assist') onAssist(ev);
+		else if (ev.type === 'refresh') load(ev.project);
+		else if (ev.type === 'refresh.files') refreshFiles();
+	} catch (e) {
+		console.error(e);
+	}
 });
