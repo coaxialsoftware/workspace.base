@@ -1,0 +1,10 @@
+{
+	"watch": {
+		"rules": {
+			"typescript": {
+				"files": ["typescript/*.ts"],
+				"tasks": "cd typescript && node build"
+			}
+		}
+	}
+}

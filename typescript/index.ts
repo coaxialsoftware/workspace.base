@@ -1,3 +1,6 @@
+declare const cxl: any;
+declare const ide: any;
+
 const { Worker } = require('worker_threads'),
 	plugin = (module.exports = cxl('workspace.typescript'));
 
@@ -28,7 +31,7 @@ function getPayload(project) {
 	};
 }
 
-function refresh(project, payload) {
+function refresh(project, payload?) {
 	payload = payload || getPayload(project);
 	project.data.typescript.worker.postMessage({ type: 'refresh', ...payload });
 }
