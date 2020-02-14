@@ -13,12 +13,19 @@ interface Project {
 	files: ProjectFile[];
 }
 
+interface SourceFile {
+	content: string;
+	version: number;
+}
+
 const ENTITIES_REGEX = /[&<>]/g,
 	ENTITIES_MAP = {
 		'&': '&amp;',
 		'<': '&lt;',
 		'>': '&gt;'
 	};
+
+const projectFiles: Record<string, SourceFile> = {};
 
 function escapeHtml(str: string) {
 	return (
@@ -30,12 +37,12 @@ class LanguageServiceHost {
 	fileExists = this.ts.sys.fileExists;
 	readFile = this.ts.sys.readFile;
 	readDirectory = this.ts.sys.readDirectory;
-	files: Record<string, any> = {};
 	config: any;
 
 	private configHost = {
 		fileExists: fs.existsSync,
 		readDirectory: this.ts.sys.readDirectory,
+		getCurrentDirectory: this.ts.sys.getCurrentDirectory,
 		readFile: (file: string) => fs.readFileSync(file, 'utf8'),
 		useCaseSensitiveFileNames: true
 	};
@@ -45,13 +52,10 @@ class LanguageServiceHost {
 	}
 
 	private $parseConfig(configFile: string) {
-		// TODO handle errors
-		const config = this.ts.readConfigFile(configFile, this.readFile);
-		const parsed = this.ts.parseJsonConfigFileContent(
-			config.config,
-			this.configHost,
-			path.dirname(configFile),
-			{ noEmit: true }
+		const parsed = this.ts.getParsedCommandLineOfConfigFile(
+			configFile,
+			{},
+			this.configHost
 		);
 		this.config = parsed;
 	}
@@ -65,13 +69,17 @@ class LanguageServiceHost {
 	}
 
 	updateFileContents(path: string, content: string) {
-		const previous = this.files[path],
+		const previous = projectFiles[path],
 			version = previous ? previous.version + 1 : 0;
-		this.files[path] = { content: content, version: version };
+		projectFiles[path] = { content: content, version: version };
 	}
 
 	clearFileContent(path: string) {
-		delete this.files[path];
+		delete projectFiles[path];
+	}
+
+	getProjectReferences() {
+		return this.config.projectReferences;
 	}
 
 	getCompilationSettings() {
@@ -83,7 +91,7 @@ class LanguageServiceHost {
 	}
 
 	getScriptVersion(filename: string) {
-		const file = this.files[filename];
+		const file = projectFiles[filename];
 		return file ? file.version : 0;
 	}
 
@@ -96,7 +104,7 @@ class LanguageServiceHost {
 	}
 
 	getScriptSnapshot(fileName: string) {
-		const file = this.files[fileName];
+		const file = projectFiles[fileName];
 
 		return this.ts.ScriptSnapshot.fromString(
 			file ? file.content : fs.readFileSync(fileName, 'utf8')
@@ -131,11 +139,7 @@ function findTypescript(project: Project) {
 		version = ts.version.split('.');
 
 	if (version[0] < 3 || version[1] < 5) {
-		let rootTs = require('typescript');
-		console.log(
-			`Typescript version not supported ${ts.version}, falling back to ${rootTs.version}`
-		);
-		return rootTs;
+		return require('typescript');
 	}
 
 	return ts;
@@ -164,11 +168,6 @@ function load(project: Project) {
 	ts = findTypescript(project);
 
 	let configFiles = findConfigFiles(project);
-
-	if (!configFiles || configFiles.length === 0)
-		return console.log(
-			`No tsconfig file found for project "${project.path}"`
-		);
 
 	languageServices = configFiles.map(
 		config => new LanguageService(ts, config)
@@ -212,7 +211,8 @@ function getHints(ls: any, file: any, $: number) {
 	const diagnostics = [
 		...ls.getSyntacticDiagnostics(file),
 		...ls.getSemanticDiagnostics(file),
-		...ls.getSuggestionDiagnostics(file)
+		...ls.getSuggestionDiagnostics(file),
+		...ls.getCompilerOptionsDiagnostics()
 	];
 
 	const hints = diagnostics.flatMap((rule: any) => flatHints(rule));
@@ -285,18 +285,18 @@ function getExtended(languageService: any, file: any, token: any, $: number) {
 
 function onAssist({ token, file, extended, $ }: any) {
 	languageServices.find(ls => {
-		const fileInfo = ls.host.getScriptFileNames().includes(file.path);
-
+		const filePath = path.resolve(file.path);
+		const fileInfo = ls.host.getScriptFileNames().includes(filePath);
 		if (fileInfo) {
-			ls.host.updateFileContents(file.path, file.content);
+			ls.host.updateFileContents(filePath, file.content);
 
+			getHints(ls.service, filePath, $);
 			if (file.diffChanged) {
-				getHints(ls.service, file.path, $);
 				if (!token.cursorValue) return true;
-				getCompletions(ls.service, file.path, token, $);
+				getCompletions(ls.service, filePath, token, $);
 			}
 
-			if (extended) getExtended(ls.service, file.path, token, $);
+			if (extended) getExtended(ls.service, filePath, token, $);
 		}
 
 		return fileInfo;

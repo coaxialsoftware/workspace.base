@@ -7,18 +7,15 @@ const { Worker } = require('worker_threads'),
 function processHints(request, ev) {
 	if (request && request.$ === ev.$) {
 		request.respond('hints', 'setHints', [ev.hints, 'typescript']);
-		console.log(`Respond hints ${ev.$}: ${ev.hints ? ev.hints.length : 0}`);
-	} else console.log('hints', ev, request.$);
+	}
 }
 
 function processExtended(request, ev) {
 	if (request && request.$ === ev.$) request.respondExtended(ev.hints);
-	else console.log('extended', ev, request.$);
 }
 
 function processInline(request, ev) {
 	if (request && request.$ === ev.$) request.respondInline(ev.hints);
-	else console.log('inline', ev, request.$);
 }
 
 function getPayload(project) {
@@ -45,11 +42,7 @@ function postMessage(req) {
 
 	let $hints, $completion, $extended;
 
-	if (file.diffChanged) {
-		requests.inline = req;
-		console.log('Request inline: ' + req.$);
-	}
-
+	requests.inline = req;
 	requests.extended = req;
 	worker.postMessage({
 		$: req.$,
@@ -60,20 +53,25 @@ function postMessage(req) {
 	});
 }
 
-function onReady(ev, project) {
+function onReady({ configFiles, tsVersion }, project) {
 	const { path, data } = project;
 	const ts = data.typescript;
 
 	ts.ready = true;
 	ts.postMessage = cxl.debounce(postMessage, 350);
 
-	plugin.dbg(`[${path}] Using typescript v${ev.tsVersion}`);
-	plugin.dbg(`[${path}] Config files used: ${ev.configFiles}`);
-
 	if (ts.configFilesWatchers)
 		ts.configFilesWatchers.forEach(w => w.unsubscribe());
 
-	ts.configFilesWatchers = ev.configFiles.map(configFile =>
+	if (!configFiles || configFiles.length === 0)
+		return plugin.dbg(
+			`No tsconfig file found for project "${project.path}"`
+		);
+
+	plugin.dbg(`[${path}] Using typescript v${tsVersion}`);
+	plugin.dbg(`[${path}] Config files used: ${configFiles}`);
+
+	ts.configFilesWatchers = configFiles.map(configFile =>
 		new ide.FileWatch(configFile).subscribe(() => refresh(project))
 	);
 }
