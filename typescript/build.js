@@ -1,6 +1,6 @@
-const { build, tsconfig } = require('../../cxl/dist/build');
+const { build, tsconfig, pkg } = require('../../cxl/dist/build');
 
 build({
 	outputDir: '../dist/typescript',
-	tasks: [tsconfig()]
+	tasks: [tsconfig(), pkg()]
 });

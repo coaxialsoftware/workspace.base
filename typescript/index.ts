@@ -30,6 +30,7 @@ function getPayload(project) {
 
 function refresh(project, payload?) {
 	payload = payload || getPayload(project);
+	plugin.dbg(`Refreshing "${project.path}"`);
 	project.data.typescript.worker.postMessage({ type: 'refresh', ...payload });
 }
 
@@ -126,8 +127,10 @@ class AssistServer extends ide.AssistServer {
 function onProjectFileChanged(project, ev) {
 	const data = project.data.typescript;
 
-	if (data && data.ready && ev.type !== 'changed') {
-		plugin.dbg(`Reloading language services for ${project.path}`);
+	if (data && data.ready && ev.type !== 'change') {
+		plugin.dbg(
+			`Reloading language services for ${project.path}(${ev.type})`
+		);
 		data.worker.postMessage({ type: 'refresh.files' });
 	}
 }

@@ -1,6 +1,14 @@
 import { workerData, parentPort } from 'worker_threads';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+	Diagnostic,
+	LanguageService,
+	CompilerOptions,
+	ParsedCommandLine
+} from 'typescript';
+
+type TypescriptModule = typeof import('typescript');
 
 interface ProjectFile {
 	filename: string;
@@ -25,30 +33,49 @@ const ENTITIES_REGEX = /[&<>]/g,
 		'>': '&gt;'
 	};
 
-const projectFiles: Record<string, SourceFile> = {};
-
 function escapeHtml(str: string) {
 	return (
 		str && str.replace(ENTITIES_REGEX, e => (ENTITIES_MAP as any)[e] || '')
 	);
 }
 
+const documentRegistry = {
+	files: {} as Record<string, SourceFile>,
+
+	updateFile(path: string, content: string) {
+		const previous = this.files[path],
+			version = previous ? previous.version + 1 : 0;
+		this.files[path] = { content: content, version: version };
+	},
+
+	releaseFile(path: string) {
+		delete this.files[path];
+	}
+};
+
+function readFile(path: string, encoding = 'utf8') {
+	return documentRegistry[path]?.content || fs.readFileSync(path, encoding);
+}
+
 class LanguageServiceHost {
 	fileExists = this.ts.sys.fileExists;
-	readFile = this.ts.sys.readFile;
 	readDirectory = this.ts.sys.readDirectory;
-	config: any;
+	readFile = readFile;
+	config: ParsedCommandLine;
 
 	private configHost = {
-		fileExists: fs.existsSync,
-		readDirectory: this.ts.sys.readDirectory,
-		getCurrentDirectory: this.ts.sys.getCurrentDirectory,
-		readFile: (file: string) => fs.readFileSync(file, 'utf8'),
-		useCaseSensitiveFileNames: true
+		fileExists: this.fileExists,
+		readDirectory: this.readDirectory,
+		getCurrentDirectory: this.getCurrentDirectory,
+		readFile: this.readFile,
+		useCaseSensitiveFileNames: true,
+		onUnRecoverableConfigFileDiagnostic(e: any) {
+			throw e;
+		}
 	};
 
-	constructor(private ts: any, public configFile: string) {
-		this.$initConfig(configFile);
+	constructor(private ts: TypescriptModule, public configFile: string) {
+		this.$parseConfig(configFile);
 	}
 
 	private $parseConfig(configFile: string) {
@@ -60,22 +87,8 @@ class LanguageServiceHost {
 		this.config = parsed;
 	}
 
-	private $initConfig(configFile: string) {
-		this.$parseConfig(configFile);
-	}
-
 	reload() {
 		this.$parseConfig(this.configFile);
-	}
-
-	updateFileContents(path: string, content: string) {
-		const previous = projectFiles[path],
-			version = previous ? previous.version + 1 : 0;
-		projectFiles[path] = { content: content, version: version };
-	}
-
-	clearFileContent(path: string) {
-		delete projectFiles[path];
 	}
 
 	getProjectReferences() {
@@ -91,34 +104,33 @@ class LanguageServiceHost {
 	}
 
 	getScriptVersion(filename: string) {
-		const file = projectFiles[filename];
-		return file ? file.version : 0;
+		const file = documentRegistry.files[filename];
+		return file ? file.version.toString() : '0';
 	}
 
 	getCurrentDirectory() {
 		return process.cwd();
 	}
 
-	getDefaultLibFileName(options: any) {
+	getDefaultLibFileName(options: CompilerOptions) {
 		return this.ts.getDefaultLibFilePath(options);
 	}
 
 	getScriptSnapshot(fileName: string) {
-		const file = projectFiles[fileName];
-
+		const file = documentRegistry.files[fileName];
 		return this.ts.ScriptSnapshot.fromString(
 			file ? file.content : fs.readFileSync(fileName, 'utf8')
 		);
 	}
 }
 
-class LanguageService {
+class ProjectLanguageService {
 	host: LanguageServiceHost;
-	service: any;
+	service: LanguageService;
 
-	constructor(ts: any, configFile: string) {
-		const host = (this.host = new LanguageServiceHost(ts, configFile));
-		this.service = ts.createLanguageService(host);
+	constructor(ts: TypescriptModule, configFile: string) {
+		this.host = new LanguageServiceHost(ts, configFile);
+		this.service = ts.createLanguageService(this.host);
 	}
 
 	dispose() {
@@ -126,7 +138,7 @@ class LanguageService {
 	}
 }
 
-function findTypescript(project: Project) {
+function findTypescript(project: Project): typeof import('typescript') {
 	let path: string;
 
 	try {
@@ -136,16 +148,16 @@ function findTypescript(project: Project) {
 	}
 
 	const ts = require(path),
-		version = ts.version.split('.');
+		version = ts.version?.split('.');
 
-	if (version[0] < 3 || version[1] < 5) {
+	if (!version || version[0] < 3 || version[1] < 5) {
 		return require('typescript');
 	}
 
 	return ts;
 }
 
-let languageServices: LanguageService[];
+let languageServices: ProjectLanguageService[];
 const CONFIG_FILE_REGEX = /tsconfig(?:\..*)?\.json$/;
 
 function findConfigFiles({ path, programs, files }: Project) {
@@ -159,18 +171,15 @@ function findConfigFiles({ path, programs, files }: Project) {
 }
 
 function load(project: Project) {
-	let ts: any;
-
 	if (languageServices) {
 		languageServices.forEach(ls => ls.dispose());
 	}
 
-	ts = findTypescript(project);
-
-	let configFiles = findConfigFiles(project);
+	const ts = findTypescript(project);
+	const configFiles = findConfigFiles(project);
 
 	languageServices = configFiles.map(
-		config => new LanguageService(ts, config)
+		config => new ProjectLanguageService(ts, config)
 	);
 
 	parentPort?.postMessage({
@@ -181,12 +190,16 @@ function load(project: Project) {
 }
 
 function getCompletions(
-	languageService: any,
-	file: any,
+	languageService: LanguageService,
+	file: string,
 	token: any,
 	$: number
 ) {
-	const result = languageService.getCompletionsAtPosition(file, token.index),
+	const result = languageService.getCompletionsAtPosition(
+			file,
+			token.index,
+			undefined
+		),
 		matches =
 			result &&
 			result.entries &&
@@ -207,7 +220,7 @@ function getCompletions(
 		});
 }
 
-function getHints(ls: any, file: any, $: number) {
+function getHints(ls: LanguageService, file: any, $: number) {
 	const diagnostics = [
 		...ls.getSyntacticDiagnostics(file),
 		...ls.getSemanticDiagnostics(file),
@@ -215,7 +228,7 @@ function getHints(ls: any, file: any, $: number) {
 		...ls.getCompilerOptionsDiagnostics()
 	];
 
-	const hints = diagnostics.flatMap((rule: any) => flatHints(rule));
+	const hints = diagnostics.flatMap(rule => flatHints(rule));
 
 	parentPort?.postMessage({
 		$,
@@ -224,7 +237,7 @@ function getHints(ls: any, file: any, $: number) {
 	});
 }
 
-function flatHints(rule: any, msg?: any): any {
+function flatHints(rule: Diagnostic, msg?: any): any {
 	msg = msg || rule.messageText;
 
 	if (typeof msg === 'string')
@@ -254,21 +267,27 @@ function processTags(hints: any[], result: any) {
 	});
 }
 
-function getExtended(languageService: any, file: any, token: any, $: number) {
+function getExtended(
+	languageService: LanguageService,
+	file: string,
+	token: any,
+	$: number
+) {
 	const result = languageService.getQuickInfoAtPosition(file, token.index);
+	// console.log(languageService.getSignatureHelpItems(file, token, {}));
 	if (result) {
 		const hints = [
 			{
 				code: 'ts',
-				title: escapeHtml(
-					result.displayParts.map((part: any) => part.text).join('')
-				),
+				title: result.displayParts
+					? escapeHtml(
+							result.displayParts.map(part => part.text).join('')
+					  )
+					: '',
 				description:
 					result.documentation &&
 					escapeHtml(
-						result.documentation
-							.map((doc: any) => doc.text)
-							.join('\n\n')
+						result.documentation.map(doc => doc.text).join('\n\n')
 					)
 			}
 		];
@@ -284,23 +303,31 @@ function getExtended(languageService: any, file: any, token: any, $: number) {
 }
 
 function onAssist({ token, file, extended, $ }: any) {
-	languageServices.find(ls => {
-		const filePath = path.resolve(file.path);
-		const fileInfo = ls.host.getScriptFileNames().includes(filePath);
-		if (fileInfo) {
-			ls.host.updateFileContents(filePath, file.content);
+	const filePath = path.resolve(file.path);
+	documentRegistry.updateFile(filePath, file.content);
 
-			getHints(ls.service, filePath, $);
+	const projectService = languageServices.find(({ service, host }) => {
+		const fileInfo = host.getScriptFileNames().includes(filePath);
+		if (fileInfo) {
+			getHints(service, filePath, $);
 			if (file.diffChanged) {
 				if (!token.cursorValue) return true;
-				getCompletions(ls.service, filePath, token, $);
+				getCompletions(service, filePath, token, $);
 			}
 
-			if (extended) getExtended(ls.service, filePath, token, $);
-		}
+			if (extended) getExtended(service, filePath, token, $);
 
-		return fileInfo;
+			return service;
+		}
 	});
+
+	if (projectService)
+		languageServices.forEach(({ service, host }) => {
+			host.getProjectReferences()?.forEach(ref => {
+				if (ref.path === projectService.host.configFile)
+					service.cleanupSemanticCache();
+			});
+		});
 }
 
 function refreshFiles() {
