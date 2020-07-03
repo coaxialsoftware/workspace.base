@@ -15,13 +15,36 @@ const fs = require('fs'),
 		D: 'Deleted',
 		R: 'Renamed',
 		C: 'Copied',
-		U: 'Updated'
+		U: 'Updated',
 	};
 function execRequest(req, res, cmd) {
 	const project = ide.projectManager.getProject(req.body.project),
 		file = req.body.file || '';
 	return ide.ServerResponse.respond(res, project.exec(cmd));
 }
+
+const gitBlame = cxl.debounce((project, filePath, row, req) => {
+	project
+		.exec(`git blame -p -L${row},${row} ${filePath}`, {
+			ignoreError: true,
+		})
+		.then(
+			res => {
+				if (!res) return;
+				const m = REGEX_BLAME.exec(res),
+					date = new Date(parseInt(m[2]) * 1000);
+				req.respondExtended([
+					{
+						code: 'git.blame',
+						tags: [date],
+						title: m[1],
+						description: m[3],
+					},
+				]);
+			},
+			() => {}
+		);
+}, 1000);
 
 function onAssist(req) {
 	const token = req.features.token,
@@ -31,27 +54,7 @@ function onAssist(req) {
 	if (req.extended && token && file && file.path && !file.changed) {
 		const filePath = path.relative(project.path, file.path),
 			row = (token.row || 0) + 1;
-
-		project
-			.exec(`git blame -p -L${row},${row} ${filePath}`, {
-				ignoreError: true
-			})
-			.then(
-				res => {
-					if (!res) return;
-					const m = REGEX_BLAME.exec(res),
-						date = new Date(parseInt(m[2]) * 1000);
-					req.respondExtended([
-						{
-							code: 'git.blame',
-							tags: [date],
-							title: m[1],
-							description: m[3]
-						}
-					]);
-				},
-				() => {}
-			);
+		gitBlame(project, filePath, row, req);
 	}
 }
 
@@ -81,7 +84,7 @@ plugin
 		readIgnore(project) {
 			return cxl.file
 				.read(project.path + '/.gitignore', 'utf8')
-				.then(this.parseIgnore.bind(this, project), function() {});
+				.then(this.parseIgnore.bind(this, project), function () {});
 		},
 
 		onGitChange(project, ev) {
@@ -112,9 +115,9 @@ plugin
 			}
 		},
 
-		server: cxl('workspace').server
+		server: cxl('workspace').server,
 	})
-	.route('GET', '/git/log', function(req, res) {
+	.route('GET', '/git/log', function (req, res) {
 		var file = req.query.f,
 			project = req.query.p,
 			cmd = `cd ${project} && git log --pretty=format:%H%n%an%n%ai%n%f ${file}`,
@@ -128,7 +131,7 @@ plugin
 					hash: m[1],
 					tags: [m[3]],
 					code: m[2],
-					title: m[4]
+					title: m[4],
 				});
 			}
 			return result;
@@ -139,26 +142,26 @@ plugin
 			ide
 				.exec(cmd, {
 					plugin: this,
-					maxBuffer: 1028000
+					maxBuffer: 1028000,
 				})
 				.then(parse),
 			this
 		);
 	})
-	.route('GET', '/git/show', function(req, res) {
+	.route('GET', '/git/show', function (req, res) {
 		var file = req.query.f,
 			project = req.query.p,
 			rev = req.query.h,
 			cmd = `cd ${project} && git show ${rev}:${file}`;
 		ide.ServerResponse.respond(
 			res,
-			ide.exec(cmd, { plugin: this }).then(function(content) {
+			ide.exec(cmd, { plugin: this }).then(function (content) {
 				return { content: content, mime: ide.File.mime(file) };
 			}),
 			this
 		);
 	})
-	.route('GET', '/git/status', function(req, res) {
+	.route('GET', '/git/status', function (req, res) {
 		var project = ide.projectManager.getProject(req.query.p),
 			cmd = `git status --porcelain -uno --verbose`,
 			REGEX = /(.)(.) (.+)/gm,
@@ -170,7 +173,7 @@ plugin
 				tag = STATUS_CODE[m[2]] || STATUS_CODE[m[1]];
 				result.push({
 					title: m[3],
-					tags: tag && [tag]
+					tags: tag && [tag],
 				});
 			}
 
@@ -183,7 +186,7 @@ plugin
 			this
 		);
 	})
-	.route('GET', '/git/pull', function(req, res) {
+	.route('GET', '/git/pull', function (req, res) {
 		var project = ide.projectManager.getProject(req.query.p),
 			cmd = 'git pull';
 		ide.ServerResponse.respond(
@@ -192,7 +195,7 @@ plugin
 			this
 		);
 	})
-	.route('POST', '/git/clone', function(req, res) {
+	.route('POST', '/git/clone', function (req, res) {
 		var project = ide.projectManager.getProject(req.body.project),
 			repo = req.body.repository,
 			cmd = `git clone ${repo}`;
@@ -202,7 +205,7 @@ plugin
 			this
 		);
 	})
-	.route('POST', '/git/diff', function(req, res) {
+	.route('POST', '/git/diff', function (req, res) {
 		var project = ide.projectManager.getProject(req.body.project),
 			file = req.body.file || '',
 			cmd = `git diff ${file}`;
@@ -216,7 +219,7 @@ plugin
 	.route('POST', '/git/checkout', (req, res) => {
 		execRequest(req, res, `git diff ${req.body.file}`);
 	})
-	.config(function() {
+	.config(function () {
 		ide.plugins.on('project.create', this.onProjectCreate.bind(this));
 		ide.plugins.on('project.load', this.onProjectLoad.bind(this));
 		ide.plugins.on('project.filechange', this.onProjectChange.bind(this));

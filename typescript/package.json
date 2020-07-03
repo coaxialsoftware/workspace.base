@@ -1,11 +1,13 @@
 {
 	"name": "@cxl/workspace.typescript",
 	"version": "0.0.1",
+	"description": "Typescript plugin",
+	"license": "GPL-3.0",
 	"files": [
 		"index.js",
 		"worker.js"
 	],
-	"dependencies": {
+	"peerDependencies": {
 		"typescript": "^3.7.3"
 	}
 }

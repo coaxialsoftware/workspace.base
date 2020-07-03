@@ -1,12 +1,7 @@
 {
+	"extends": "../tsconfig.json",
 	"compilerOptions": {
-		"lib": ["es2019"],
-		"types": ["node"],
-		"target": "es2019",
-		"strict": false,
-		"module": "commonjs",
-		"composite": true,
-		"typeRoots": ["../node_modules/@types"]
+		"outDir": "../dist/typescript"
 	},
 	"files": ["index.ts", "worker.ts"]
 }

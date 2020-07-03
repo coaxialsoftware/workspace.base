@@ -6,6 +6,6 @@
 		"node-pty-prebuilt": "*"
 	},
 	"dependencies": {
-		"node-pty": "^0.9.0-beta24"
+		"node-pty": "^0.9.0"
 	}
 }
