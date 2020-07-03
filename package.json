@@ -1,0 +1,10 @@
+{
+	"name": "@cxl/workspace.base",
+	"version": "0.0.1",
+	"dependencies": {
+		"typescript": "*"
+	},
+	"devDependencies": {
+		"@types/node": "^13.13.2"
+	}
+}

@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"incremental": true,
+		"strict": true,
+		//"lib": ["es2019"],
+		"target": "esnext",
+		"module": "commonjs",
+		"allowJs": true,
+		"experimentalDecorators": true,
+		"sourceMap": true,
+		"moduleResolution": "Node",
+		"removeComments": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"composite": true,
+		"skipLibCheck": true,
+		"jsx": "react",
+		"jsxFactory": "dom",
+		"types": ["node"],
+		"typeRoots": ["node_modules/@types"]
+	},
+	"files": []
+}
