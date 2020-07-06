@@ -46,7 +46,11 @@ const fileCache = {
 	updateFile(path: string, content: string) {
 		const previous = this.files[path],
 			version = previous ? previous.version + 1 : 0;
-		this.files[path] = { content: content, version: version };
+
+		if (!previous || previous.content !== content) {
+			this.files[path] = { content, version };
+			return true;
+		}
 	},
 
 	releaseFile(path: string) {
@@ -234,7 +238,7 @@ function getCompletions(
 		parentPort?.postMessage({
 			$,
 			type: 'assist.inline',
-			hints: matches.map((r: any) => ({
+			hints: matches.map(r => ({
 				title: r.name,
 				icon: r.kind,
 			})),
@@ -242,15 +246,15 @@ function getCompletions(
 }
 
 function getHints(ls: LanguageService, file: any, $: number) {
-	const diagnostics = [
-		...ls.getSyntacticDiagnostics(file),
-		...ls.getSemanticDiagnostics(file),
-		...ls.getSuggestionDiagnostics(file),
-		...ls.getCompilerOptionsDiagnostics(),
-	];
+	const hints: any[] = [];
+	for (const rule of ls.getSyntacticDiagnostics(file))
+		flatHints(rule, '', hints);
+	for (const rule of ls.getSemanticDiagnostics(file))
+		flatHints(rule, '', hints);
+	for (const rule of ls.getSuggestionDiagnostics(file))
+		flatHints(rule, '', hints);
 
-	const hints = diagnostics.flatMap(rule => flatHints(rule));
-
+	// Send even if empty so the editor clears them
 	parentPort?.postMessage({
 		$,
 		type: 'hints',
@@ -258,22 +262,20 @@ function getHints(ls: LanguageService, file: any, $: number) {
 	});
 }
 
-function flatHints(rule: Diagnostic, msg?: any): any {
+function flatHints(rule: Diagnostic, msg: any, hints: any[]): any {
 	msg = msg || rule.messageText;
 
 	if (typeof msg === 'string')
-		return {
+		return hints.push({
 			code: 'typescript',
 			title: escapeHtml(msg),
 			className: rule.category > 1 ? 'warn' : 'error',
 			range: { index: rule.start, length: rule.length },
-		};
+		});
 	else {
-		const result = [];
 		do {
-			result.push(flatHints(rule, msg.messageText));
+			flatHints(rule, msg.messageText, hints);
 		} while ((msg = msg.next && msg.next[0]));
-		return result;
 	}
 }
 
@@ -353,7 +355,7 @@ function getExtended(
 	token: any,
 	$: number
 ) {
-	const start = token.index - token.cursorValue.length;
+	const start = token.index - (token.cursorValue?.length || 0) - 1;
 	const quick = languageService.getQuickInfoAtPosition(file, token.index);
 	if (quick) postHints(postQuickInfo(quick), $);
 	const def = languageService.getDefinitionAtPosition(file, token.index);
@@ -363,20 +365,19 @@ function getExtended(
 
 function onAssist({ token, file, extended, $ }: any) {
 	const filePath = path.resolve(file.path);
-	fileCache.updateFile(filePath, file.content);
-
-	languageServices.find(({ service, host }) => {
+	const hasChanged = fileCache.updateFile(filePath, file.content);
+	let pending = true;
+	languageServices.forEach(({ service, host }) => {
 		const isProjectFile = host.getScriptFileNames().includes(filePath);
-
-		if (isProjectFile) {
-			getHints(service, filePath, $);
-			if (file.diffChanged) {
-				host.updateProjectVersion();
+		if (hasChanged) host.updateProjectVersion();
+		if (pending && isProjectFile) {
+			if (hasChanged) {
+				getHints(service, filePath, $);
 				if (!token.cursorValue) return true;
 				getCompletions(service, filePath, token, $);
 			}
 			if (extended) getExtended(service, filePath, token, $);
-			return true;
+			pending = false;
 		}
 	});
 }
