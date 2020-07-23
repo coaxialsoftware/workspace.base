@@ -1,6 +1,6 @@
 {
 	"name": "@cxl/workspace.typescript",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Typescript plugin",
 	"license": "GPL-3.0",
 	"files": [

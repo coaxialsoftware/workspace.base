@@ -17,6 +17,8 @@ const fs = require('fs'),
 		C: 'Copied',
 		U: 'Updated',
 	};
+const { spawn } = require('child_process');
+
 function execRequest(req, res, cmd) {
 	const project = ide.projectManager.getProject(req.body.project),
 		file = req.body.file || '';

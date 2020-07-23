@@ -22,9 +22,9 @@ class AssistServer extends ide.AssistServer {
 						row: rule.line - 1,
 						column: rule.column,
 						endRow: rule.endLine - 1,
-						endColumn: rule.endColumn
+						endColumn: rule.endColumn,
 					},
-					className: rule.severity === 2 ? 'error' : 'warn'
+					className: rule.severity === 2 ? 'error' : 'warn',
 				};
 			});
 		}
@@ -34,12 +34,12 @@ class AssistServer extends ide.AssistServer {
 
 	canAssist(req) {
 		const file = req.features.file;
-
 		return (
 			file &&
 			file.diffChanged &&
 			(file.mime === 'application/javascript' ||
-				file.mime === 'application/typescript')
+				file.mime === 'application/typescript' ||
+				file.mime === 'text/jsx')
 		);
 	}
 
@@ -69,8 +69,8 @@ class AssistServer extends ide.AssistServer {
 
 			data.eslint = {
 				cli: new eslint.CLIEngine({
-					cwd
-				})
+					cwd,
+				}),
 			};
 		}
 
@@ -99,9 +99,9 @@ class AssistServer extends ide.AssistServer {
 }
 
 const plugin = (module.exports = cxl('workspace.eslint')
-	.config(function() {
+	.config(function () {
 		this.server = workspace.server;
 	})
-	.run(function() {
+	.run(function () {
 		new AssistServer();
 	}));
