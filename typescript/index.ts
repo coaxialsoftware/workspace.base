@@ -5,6 +5,10 @@ import { Worker } from 'worker_threads';
 
 const plugin = (module.exports = cxl('workspace.typescript'));
 
+export interface SocketMessage {
+	tsVersion?: string;
+}
+
 interface ReadyEvent {
 	type: string;
 	configFiles: string[];
@@ -13,6 +17,7 @@ interface ReadyEvent {
 
 interface Request {
 	$: number;
+	client: any;
 	extended: boolean;
 	respond(plugin: string, method: string, params: any[]): void;
 	respondExtended(hints: any[]): void;
@@ -31,10 +36,11 @@ interface Project {
 	configuration: any;
 	files: any;
 	data: any;
+	socket: any;
 }
 
 function processHints(request: Request, ev: Event) {
-	if (request && request.$ === ev.$) {
+	if (request) {
 		request.respond('hints', 'setHints', [ev.hints, 'typescript']);
 	}
 }
@@ -86,7 +92,15 @@ function onReady({ configFiles, tsVersion }: ReadyEvent, project: Project) {
 	const ts = data.typescript;
 
 	ts.ready = true;
-	ts.postMessage = cxl.debounce(postMessage, 350);
+	ts.tsVersion = tsVersion;
+	ts.postMessage = cxl.debounce(postMessage, 200);
+
+	project.socket.broadcast(
+		{
+			tsVersion: data.tsVersion,
+		},
+		'typescript'
+	);
 
 	if (ts.configFilesWatchers)
 		ts.configFilesWatchers.forEach((w: any) => w.unsubscribe());
@@ -162,8 +176,19 @@ function onProjectFileChanged(project: Project, ev: any) {
 	}
 }
 
-plugin.run(() => {
-	ide.plugins.on('project.ready', onProjectLoad);
-	ide.plugins.on('project.filechange', onProjectFileChanged);
-	new AssistServer();
-});
+plugin
+	.extend({
+		sourcePath: __dirname + '/typescript.js',
+	})
+	.run(() => {
+		ide.plugins.on('project.ready', onProjectLoad);
+		ide.plugins.on('project.filechange', onProjectFileChanged);
+		ide.plugins.on('project.connect', (project: Project, client: any) => {
+			const data = project.data.typescript;
+			if (data)
+				ide.socket.respond(client, 'typescript', {
+					tsVersion: data.tsVersion,
+				});
+		});
+		new AssistServer();
+	});

@@ -290,12 +290,16 @@ function processTags(hints: any[], result: any) {
 	});
 }
 
+function renderDisplayParts(dp: ts.SymbolDisplayPart[]) {
+	return escapeHtml(dp.map(part => part.text).join(''));
+}
+
 function postQuickInfo(quick: ts.QuickInfo) {
 	const hints = [
 		{
-			code: 'ts',
+			code: 'typescript',
 			title: quick.displayParts
-				? escapeHtml(quick.displayParts.map(part => part.text).join(''))
+				? renderDisplayParts(quick.displayParts)
 				: '',
 			description:
 				quick.documentation &&
@@ -326,7 +330,7 @@ function postDefinition(
 		if (!pos) continue;
 
 		hints.push({
-			code: 'ts',
+			code: 'typescript',
 			title: `Go to definition #${i++}`,
 			action:
 				file === def.fileName
@@ -349,6 +353,53 @@ function postHints(hints: any[], $: number) {
 		});
 }
 
+function postRefactors(refactors: ts.ApplicableRefactorInfo[]) {
+	return refactors.map((r, i) => ({
+		code: 'typescript',
+		tags: [`Refactor ${i + 1}/${refactors.length}`],
+		title: r.name,
+		description: r.description,
+	}));
+}
+
+function postSignatureHelp(sigHelp: ts.SignatureHelpItems) {
+	const length = sigHelp.items.length;
+	return sigHelp.items.flatMap((h, index) => {
+		const sep = renderDisplayParts(h.separatorDisplayParts);
+		const description =
+			h.documentation && renderDisplayParts(h.documentation);
+
+		const tags = [`Function ${index + 1}/${length}`];
+		const activeParam = h.parameters[sigHelp.argumentIndex];
+
+		return [
+			{
+				code: 'typescript',
+				title:
+					renderDisplayParts(h.prefixDisplayParts) +
+					h.parameters
+						.map(p => renderDisplayParts(p.displayParts))
+						.join(sep) +
+					renderDisplayParts(h.suffixDisplayParts),
+				tags,
+				description,
+			},
+			activeParam && {
+				code: 'typescript',
+				title: renderDisplayParts(activeParam.displayParts),
+				tags: [
+					`Parameter ${sigHelp.argumentIndex + 1}/${
+						sigHelp.argumentCount
+					}`,
+				],
+				description:
+					activeParam.documentation &&
+					renderDisplayParts(activeParam.documentation),
+			},
+		];
+	});
+}
+
 function getExtended(
 	languageService: LanguageService,
 	file: string,
@@ -356,17 +407,33 @@ function getExtended(
 	$: number
 ) {
 	const start = token.index - (token.cursorValue?.length || 0) - 1;
+
 	const quick = languageService.getQuickInfoAtPosition(file, token.index);
 	if (quick) postHints(postQuickInfo(quick), $);
+
+	const sigHelp = languageService.getSignatureHelpItems(
+		file,
+		token.index,
+		undefined
+	);
+	if (sigHelp) postHints(postSignatureHelp(sigHelp), $);
+
 	const def = languageService.getDefinitionAtPosition(file, token.index);
 	if (def && def.length)
 		postHints(postDefinition(languageService, def, file, start), $);
+	const refactors = languageService.getApplicableRefactors(
+		file,
+		token.index,
+		undefined
+	);
+	if (refactors.length) postHints(postRefactors(refactors), $);
 }
 
 function onAssist({ token, file, extended, $ }: any) {
 	const filePath = path.resolve(file.path);
 	const hasChanged = fileCache.updateFile(filePath, file.content);
 	let pending = true;
+
 	languageServices.forEach(({ service, host }) => {
 		const isProjectFile = host.getScriptFileNames().includes(filePath);
 		if (hasChanged) host.updateProjectVersion();

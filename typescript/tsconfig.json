@@ -3,5 +3,5 @@
 	"compilerOptions": {
 		"outDir": "../dist/typescript"
 	},
-	"files": ["index.ts", "worker.ts"]
+	"files": ["index.ts", "worker.ts", "typescript.ts"]
 }
