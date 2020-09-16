@@ -1,0 +1,9 @@
+{
+	"name": "@cxl/workspace.clang",
+	"version": "0.0.1",
+	"description": "clang plugin",
+	"license": "GPL-3.0",
+	"scripts": {
+		"build": "node ../../cxl/dist/build"
+	}
+}

@@ -1,0 +1,6 @@
+{
+	"compilerOptions": {
+		"outDir": "../dist/clang"
+	},
+	"references": [{ "path": "tsconfig.json" }]
+}
