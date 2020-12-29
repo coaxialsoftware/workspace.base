@@ -110,9 +110,9 @@ plugin
 				project.configuration.ignore.push('.git');
 				project.resolve(this.onGitChange(project));
 				project.resources.add(
-					ide.DirectoryWatch.create(
-						project.path + '/.git'
-					).subscribe(ev => this.onGitChange(project, ev))
+					ide
+						.watch(project.path + '/.git')
+						.subscribe(ev => this.onGitChange(project, ev))
 				);
 			}
 		},
